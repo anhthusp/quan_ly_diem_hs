@@ -1,60 +1,73 @@
-# from channels.auth import login, logout
-from django.contrib.auth import authenticate, login, logout
-from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
-
-from student_management_app.EmailBackEnd import EmailBackEnd
-
-
-def home(request):
-    return render(request, 'index.html')
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from .models import GiaoVien, HocSinh, PhuHuynh
 
 
 def loginPage(request):
+    if request.user.is_authenticated:
+        return redirect("logout_user")  # ép logout nếu người dùng vào trang login khi đang đăng nhập
     return render(request, 'login.html')
-
 
 
 def doLogin(request):
     if request.method != "POST":
-        return HttpResponse("<h2>Method Not Allowed</h2>")
-    else:
-        user = EmailBackEnd.authenticate(request, username=request.POST.get('email'), password=request.POST.get('password'))
-        if user != None:
-            login(request, user)
-            user_type = user.user_type
-            #return HttpResponse("Email: "+request.POST.get('email')+ " Password: "+request.POST.get('password'))
-            if user_type == '1':
-                return redirect('admin_home')
-                
-            elif user_type == '2':
-                # return HttpResponse("Staff Login")
-                return redirect('staff_home')
-                
-            elif user_type == '3':
-                # return HttpResponse("Student Login")
-                return redirect('student_home')
-            else:
-                messages.error(request, "Invalid Login!")
-                return redirect('login')
+        return redirect("login")
+
+    username = request.POST.get("username")
+    password = request.POST.get("password")
+
+    user = authenticate(request, username=username, password=password)
+
+    if user is not None:
+        request.session.flush() 
+        login(request, user)
+
+        # Điều hướng theo vai trò
+        if hasattr(user, 'giaovien'):
+            role = user.giaovien.VAI_TRO
+            if role in ["admin", "ban_giam_hieu"]:
+                return redirect("admin_home")
+            elif role == "giao_vien":
+                return redirect("teacher_home")
+
+        elif hasattr(user, 'hocsinh'):
+            return redirect("student_home")
+
+        elif hasattr(user, 'phuhuynh'):
+            return redirect("parent_home")
+
         else:
-            messages.error(request, "Invalid Login Credentials!")
-            #return HttpResponseRedirect("/")
-            return redirect('login')
-
-
-
-def get_user_details(request):
-    if request.user != None:
-        return HttpResponse("User: "+request.user.email+" User Type: "+request.user.user_type)
+            messages.error(request, "Không xác định được vai trò người dùng.")
+            return redirect("login")
     else:
-        return HttpResponse("Please Login First")
-
+        messages.error(request, "Tên đăng nhập hoặc mật khẩu không đúng.")
+        return redirect("login")
 
 
 def logout_user(request):
-    logout(request)
-    return HttpResponseRedirect('/')
+    logout(request)               # Hủy đăng nhập
+    request.session.flush()       # Xóa toàn bộ session
+    response = redirect('login')
+    response.delete_cookie('sessionid')  # Xóa cookie
+    return response
 
 
+@login_required(login_url='login')
+def home(request):
+    user = request.user
+    if hasattr(user, 'giaovien'):
+        role = user.giaovien.VAI_TRO
+        if role in ["admin", "ban_giam_hieu"]:
+            return redirect("admin_home")
+        elif role == "giao_vien":
+            return redirect("teacher_home")
+
+    elif hasattr(user, 'hocsinh'):
+        return redirect("student_home")
+
+    elif hasattr(user, 'phuhuynh'):
+        return redirect("parent_home")
+
+    return redirect("login")

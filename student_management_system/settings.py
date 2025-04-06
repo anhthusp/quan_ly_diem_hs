@@ -14,8 +14,16 @@ SECRET_KEY = '(i#*06f#keydy_fh17bf=$0f6v)^wr^l7*u4gq42m*sztu#2_m'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
+LOGIN_URL = '/login/'
+
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Tắt trình duyệt thì session hết hiệu lực
+SESSION_COOKIE_AGE = 18000  # Session hết hạn sau 60 giây
+SESSION_SAVE_EVERY_REQUEST = True  # Cập nhật lại thời gian mỗi lần request mới
+
+# Ngăn trình duyệt cache phiên trước
+CSRF_USE_SESSIONS = True
 
 # Application definition
 
@@ -36,10 +44,11 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'student_management_app.LoginCheckMiddleWare.LoginCheckMiddleWare',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
-    'student_management_app.LoginCheckMiddleWare.LoginCheckMiddleWare',
+    'django.contrib.sessions.middleware.SessionMiddleware',  
+    
 ]
 
 ROOT_URLCONF = 'student_management_system.urls'
@@ -121,7 +130,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 #For Custom USER
-AUTH_USER_MODEL = "student_management_app.CustomUser"
+#AUTH_USER_MODEL = "student_management_app.CustomUser"
+# AUTH_USER_MODEL = 'student_management_app.GiaoVien'
 
 # Registering Custom Backend "EmailBackEnd"
-AUTHENTICATION_BACKENDS = ['student_management_app.EmailBackEnd.EmailBackEnd']
+AUTHENTICATION_BACKENDS = ['student_management_app.UserCodeBackend.UserCodeBackend']
+

@@ -1,794 +1,628 @@
-from django.shortcuts import render, redirect
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.core.files.storage import FileSystemStorage #To upload Profile Picture
-from django.urls import reverse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.core import serializers
-import json
+from student_management_app.models import GiaoVien, HocSinh, LopHoc, MonHoc, MonHocLop, HocSinhLop, KetQua, PhuHuynh, YKien, YKienGV
+from .forms import AddHocSinhForm, EditHocSinhForm
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.contrib.auth.models import User
+from django.contrib.messages import get_messages
+from django.utils.http import urlencode
 
-from student_management_app.models import CustomUser, Staffs, Courses, Subjects, Students, SessionYearModel, FeedBackStudent, FeedBackStaffs, LeaveReportStudent, LeaveReportStaff, Attendance, AttendanceReport
-from .forms import AddStudentForm, EditStudentForm
-
-
+# Trang chủ admin
+@login_required(login_url='login')
 def admin_home(request):
-    all_student_count = Students.objects.all().count()
-    subject_count = Subjects.objects.all().count()
-    course_count = Courses.objects.all().count()
-    staff_count = Staffs.objects.all().count()
+    hoc_sinh_count = HocSinh.objects.count()
+    giao_vien_count = GiaoVien.objects.count()
+    lop_hoc_count = LopHoc.objects.count()
+    mon_hoc_count = MonHoc.objects.count()
 
-    # Total Subjects and students in Each Course
-    course_all = Courses.objects.all()
-    course_name_list = []
-    subject_count_list = []
-    student_count_list_in_course = []
-
-    for course in course_all:
-        subjects = Subjects.objects.filter(course_id=course.id).count()
-        students = Students.objects.filter(course_id=course.id).count()
-        course_name_list.append(course.course_name)
-        subject_count_list.append(subjects)
-        student_count_list_in_course.append(students)
-    
-    subject_all = Subjects.objects.all()
-    subject_list = []
-    student_count_list_in_subject = []
-    for subject in subject_all:
-        course = Courses.objects.get(id=subject.course_id.id)
-        student_count = Students.objects.filter(course_id=course.id).count()
-        subject_list.append(subject.subject_name)
-        student_count_list_in_subject.append(student_count)
-    
-    # For Saffs
-    staff_attendance_present_list=[]
-    staff_attendance_leave_list=[]
-    staff_name_list=[]
-
-    staffs = Staffs.objects.all()
-    for staff in staffs:
-        subject_ids = Subjects.objects.filter(staff_id=staff.admin.id)
-        attendance = Attendance.objects.filter(subject_id__in=subject_ids).count()
-        leaves = LeaveReportStaff.objects.filter(staff_id=staff.id, leave_status=1).count()
-        staff_attendance_present_list.append(attendance)
-        staff_attendance_leave_list.append(leaves)
-        staff_name_list.append(staff.admin.first_name)
-
-    # For Students
-    student_attendance_present_list=[]
-    student_attendance_leave_list=[]
-    student_name_list=[]
-
-    students = Students.objects.all()
-    for student in students:
-        attendance = AttendanceReport.objects.filter(student_id=student.id, status=True).count()
-        absent = AttendanceReport.objects.filter(student_id=student.id, status=False).count()
-        leaves = LeaveReportStudent.objects.filter(student_id=student.id, leave_status=1).count()
-        student_attendance_present_list.append(attendance)
-        student_attendance_leave_list.append(leaves+absent)
-        student_name_list.append(student.admin.first_name)
-
-
-    context={
-        "all_student_count": all_student_count,
-        "subject_count": subject_count,
-        "course_count": course_count,
-        "staff_count": staff_count,
-        "course_name_list": course_name_list,
-        "subject_count_list": subject_count_list,
-        "student_count_list_in_course": student_count_list_in_course,
-        "subject_list": subject_list,
-        "student_count_list_in_subject": student_count_list_in_subject,
-        "staff_attendance_present_list": staff_attendance_present_list,
-        "staff_attendance_leave_list": staff_attendance_leave_list,
-        "staff_name_list": staff_name_list,
-        "student_attendance_present_list": student_attendance_present_list,
-        "student_attendance_leave_list": student_attendance_leave_list,
-        "student_name_list": student_name_list,
+    context = {
+        "hoc_sinh_count": hoc_sinh_count,
+        "giao_vien_count": giao_vien_count,
+        "lop_hoc_count": lop_hoc_count,
+        "mon_hoc_count": mon_hoc_count,
     }
     return render(request, "hod_template/home_content.html", context)
 
+@login_required(login_url='login')
+def assign_student_to_class(request):
+    old_namhoc = request.GET.get("old_namhoc")
+    old_khoi = request.GET.get("old_khoi")
+    old_lop = request.GET.get("old_lop")
 
-def add_staff(request):
-    return render(request, "hod_template/add_staff_template.html")
+    khoi_list = [10, 11, 12]
+    ds_namhoc = LopHoc.objects.values_list("NamHOC", flat=True).distinct()
+    ds_lop = LopHoc.objects.all()
 
+    danh_sach = []
+    if old_namhoc and old_lop:
+        danh_sach = HocSinhLop.objects.filter(
+            MaLOP__MaLOP=old_lop,
+            NamHOC=old_namhoc
+        ).select_related("MaHS")
 
-def add_staff_save(request):
-    if request.method != "POST":
-        messages.error(request, "Invalid Method ")
-        return redirect('add_staff')
-    else:
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        address = request.POST.get('address')
+        # ✅ Thêm danh sách các lớp đã học cho mỗi học sinh
+        for hs_lop in danh_sach:
+            ds_lop_da_gan = HocSinhLop.objects.filter(MaHS=hs_lop.MaHS).select_related("MaLOP")
+            hs_lop.da_gan_list = [(i.MaLOP.TenLOP, i.NamHOC) for i in ds_lop_da_gan]
 
-        try:
-            user = CustomUser.objects.create_user(username=username, password=password, email=email, first_name=first_name, last_name=last_name, user_type=2)
-            user.staffs.address = address
-            user.save()
-            messages.success(request, "Staff Added Successfully!")
-            return redirect('add_staff')
-        except:
-            messages.error(request, "Failed to Add Staff!")
-            return redirect('add_staff')
+    if request.method == "POST":
+        selected_ids = request.POST.getlist("selected_students[]") or request.POST.getlist("selected_students")
+        new_lop = request.POST.get("new_lop")
+        new_namhoc = request.POST.get("new_namhoc")
 
+        if not selected_ids or not new_lop or not new_namhoc:
+            messages.error(request, "Vui lòng chọn học sinh và lớp mới.")
+            return redirect("assign_student")
 
+        lop_moi = get_object_or_404(LopHoc, MaLOP=new_lop, NamHOC=new_namhoc)
+        count = 0
+        for mahs in selected_ids:
+            hs = get_object_or_404(HocSinh, MaHS=mahs)
+            if not HocSinhLop.objects.filter(MaHS=hs, MaLOP=lop_moi, NamHOC=new_namhoc).exists():
+                HocSinhLop.objects.create(MaHS=hs, MaLOP=lop_moi, NamHOC=new_namhoc)
+                count += 1
 
-def manage_staff(request):
-    staffs = Staffs.objects.all()
-    context = {
-        "staffs": staffs
-    }
-    return render(request, "hod_template/manage_staff_template.html", context)
+        messages.success(request, f"Đã gán {count} học sinh vào lớp {lop_moi.TenLOP} ({new_namhoc})")
 
+        # Giữ lại trạng thái lọc
+        base_url = reverse('assign_student')
+        query_string = urlencode({
+            'old_namhoc': old_namhoc,
+            'old_khoi': old_khoi,
+            'old_lop': old_lop,
+        })
+        return redirect(f"{base_url}?{query_string}")
 
-def edit_staff(request, staff_id):
-    staff = Staffs.objects.get(admin=staff_id)
+    return render(request, "hod_template/assign_student_template.html", {
+        "ds_namhoc": ds_namhoc,
+        "khoi_list": khoi_list,
+        "ds_lop": ds_lop,
+        "old_namhoc": old_namhoc,
+        "old_khoi": old_khoi,
+        "old_lop": old_lop,
+        "danh_sach": danh_sach
+    })
 
-    context = {
-        "staff": staff,
-        "id": staff_id
-    }
-    return render(request, "hod_template/edit_staff_template.html", context)
-
-
-def edit_staff_save(request):
-    if request.method != "POST":
-        return HttpResponse("<h2>Method Not Allowed</h2>")
-    else:
-        staff_id = request.POST.get('staff_id')
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        address = request.POST.get('address')
-
-        try:
-            # INSERTING into Customuser Model
-            user = CustomUser.objects.get(id=staff_id)
-            user.first_name = first_name
-            user.last_name = last_name
-            user.email = email
-            user.username = username
-            user.save()
-            
-            # INSERTING into Staff Model
-            staff_model = Staffs.objects.get(admin=staff_id)
-            staff_model.address = address
-            staff_model.save()
-
-            messages.success(request, "Staff Updated Successfully.")
-            return redirect('/edit_staff/'+staff_id)
-
-        except:
-            messages.error(request, "Failed to Update Staff.")
-            return redirect('/edit_staff/'+staff_id)
-
-
-
-def delete_staff(request, staff_id):
-    staff = Staffs.objects.get(admin=staff_id)
-    try:
-        staff.delete()
-        messages.success(request, "Staff Deleted Successfully.")
-        return redirect('manage_staff')
-    except:
-        messages.error(request, "Failed to Delete Staff.")
-        return redirect('manage_staff')
-
-
-
-
-def add_course(request):
-    return render(request, "hod_template/add_course_template.html")
-
-
-def add_course_save(request):
-    if request.method != "POST":
-        messages.error(request, "Invalid Method!")
-        return redirect('add_course')
-    else:
-        course = request.POST.get('course')
-        try:
-            course_model = Courses(course_name=course)
-            course_model.save()
-            messages.success(request, "Course Added Successfully!")
-            return redirect('add_course')
-        except:
-            messages.error(request, "Failed to Add Course!")
-            return redirect('add_course')
-
-
-def manage_course(request):
-    courses = Courses.objects.all()
-    context = {
-        "courses": courses
-    }
-    return render(request, 'hod_template/manage_course_template.html', context)
-
-
-def edit_course(request, course_id):
-    course = Courses.objects.get(id=course_id)
-    context = {
-        "course": course,
-        "id": course_id
-    }
-    return render(request, 'hod_template/edit_course_template.html', context)
-
-
-def edit_course_save(request):
-    if request.method != "POST":
-        HttpResponse("Invalid Method")
-    else:
-        course_id = request.POST.get('course_id')
-        course_name = request.POST.get('course')
-
-        try:
-            course = Courses.objects.get(id=course_id)
-            course.course_name = course_name
-            course.save()
-
-            messages.success(request, "Course Updated Successfully.")
-            return redirect('/edit_course/'+course_id)
-
-        except:
-            messages.error(request, "Failed to Update Course.")
-            return redirect('/edit_course/'+course_id)
-
-
-def delete_course(request, course_id):
-    course = Courses.objects.get(id=course_id)
-    try:
-        course.delete()
-        messages.success(request, "Course Deleted Successfully.")
-        return redirect('manage_course')
-    except:
-        messages.error(request, "Failed to Delete Course.")
-        return redirect('manage_course')
-
-
-def manage_session(request):
-    session_years = SessionYearModel.objects.all()
-    context = {
-        "session_years": session_years
-    }
-    return render(request, "hod_template/manage_session_template.html", context)
-
-
-def add_session(request):
-    return render(request, "hod_template/add_session_template.html")
-
-
-def add_session_save(request):
-    if request.method != "POST":
-        messages.error(request, "Invalid Method")
-        return redirect('add_course')
-    else:
-        session_start_year = request.POST.get('session_start_year')
-        session_end_year = request.POST.get('session_end_year')
-
-        try:
-            sessionyear = SessionYearModel(session_start_year=session_start_year, session_end_year=session_end_year)
-            sessionyear.save()
-            messages.success(request, "Session Year added Successfully!")
-            return redirect("add_session")
-        except:
-            messages.error(request, "Failed to Add Session Year")
-            return redirect("add_session")
-
-
-def edit_session(request, session_id):
-    session_year = SessionYearModel.objects.get(id=session_id)
-    context = {
-        "session_year": session_year
-    }
-    return render(request, "hod_template/edit_session_template.html", context)
-
-
-def edit_session_save(request):
-    if request.method != "POST":
-        messages.error(request, "Invalid Method!")
-        return redirect('manage_session')
-    else:
-        session_id = request.POST.get('session_id')
-        session_start_year = request.POST.get('session_start_year')
-        session_end_year = request.POST.get('session_end_year')
-
-        try:
-            session_year = SessionYearModel.objects.get(id=session_id)
-            session_year.session_start_year = session_start_year
-            session_year.session_end_year = session_end_year
-            session_year.save()
-
-            messages.success(request, "Session Year Updated Successfully.")
-            return redirect('/edit_session/'+session_id)
-        except:
-            messages.error(request, "Failed to Update Session Year.")
-            return redirect('/edit_session/'+session_id)
-
-
-def delete_session(request, session_id):
-    session = SessionYearModel.objects.get(id=session_id)
-    try:
-        session.delete()
-        messages.success(request, "Session Deleted Successfully.")
-        return redirect('manage_session')
-    except:
-        messages.error(request, "Failed to Delete Session.")
-        return redirect('manage_session')
-
-
+@login_required(login_url='login')
 def add_student(request):
-    form = AddStudentForm()
-    context = {
-        "form": form
-    }
-    return render(request, 'hod_template/add_student_template.html', context)
+    ds_namhoc = LopHoc.objects.values_list("NamHOC", flat=True).distinct()
+    ds_khoi = [10, 11, 12]
+    ds_lop = LopHoc.objects.all().order_by("Khoi", "TenLOP")
 
+    # Xoá message cũ ngay khi load trang (dù GET hay POST)
+    list(get_messages(request))  # Điều này giúp reset session message trước mỗi render
 
+    if request.method == "POST":
+        mahs = request.POST.get("MaHS")
+        hoten = request.POST.get("HoTen")
+        ngaysinh = request.POST.get("NgaySinh")
+        gioitinh = request.POST.get("GTinh")
+        email = request.POST.get("Email")
+        sdt = request.POST.get("SoDT")
+        password = request.POST.get("password")
 
+        namhoc = request.POST.get("namhoc")
+        khoi = request.POST.get("khoi")
+        lop = request.POST.get("lop")
 
-def add_student_save(request):
-    if request.method != "POST":
-        messages.error(request, "Invalid Method")
-        return redirect('add_student')
-    else:
-        form = AddStudentForm(request.POST, request.FILES)
+        if HocSinh.objects.filter(MaHS=mahs).exists():
+            messages.error(request, "Mã học sinh đã tồn tại!")
+            return redirect("add_student")
 
-        if form.is_valid():
-            first_name = form.cleaned_data['first_name']
-            last_name = form.cleaned_data['last_name']
-            username = form.cleaned_data['username']
-            email = form.cleaned_data['email']
-            password = form.cleaned_data['password']
-            address = form.cleaned_data['address']
-            session_year_id = form.cleaned_data['session_year_id']
-            course_id = form.cleaned_data['course_id']
-            gender = form.cleaned_data['gender']
+        try:
+            user = User.objects.create_user(username=mahs, email=email, password=password)
+            hs = HocSinh.objects.create(
+                user=user,
+                MaHS=mahs,
+                HoTen=hoten,
+                NgaySinh=ngaysinh,
+                GTinh=gioitinh,
+                Email=email,
+                SoDT=sdt,
+            )
+            lop_hoc = LopHoc.objects.get(MaLOP=lop, NamHOC=namhoc)
+            HocSinhLop.objects.create(MaHS=hs, MaLOP=lop_hoc, NamHOC=namhoc)
 
-            # Getting Profile Pic first
-            # First Check whether the file is selected or not
-            # Upload only if file is selected
-            if len(request.FILES) != 0:
-                profile_pic = request.FILES['profile_pic']
-                fs = FileSystemStorage()
-                filename = fs.save(profile_pic.name, profile_pic)
-                profile_pic_url = fs.url(filename)
-            else:
-                profile_pic_url = None
+            messages.success(request, "Thêm học sinh thành công!")
+            return redirect("add_student")
 
+        except Exception as e:
+            messages.error(request, f"Lỗi khi thêm: {e}")
+            return redirect("add_student")
 
-            try:
-                user = CustomUser.objects.create_user(username=username, password=password, email=email, first_name=first_name, last_name=last_name, user_type=3)
-                user.students.address = address
+    return render(request, "hod_template/add_student_template.html", {
+        "ds_namhoc": ds_namhoc,
+        "ds_khoi": ds_khoi,
+        "ds_lop": ds_lop,
+    })
 
-                course_obj = Courses.objects.get(id=course_id)
-                user.students.course_id = course_obj
-
-                session_year_obj = SessionYearModel.objects.get(id=session_year_id)
-                user.students.session_year_id = session_year_obj
-
-                user.students.gender = gender
-                user.students.profile_pic = profile_pic_url
-                user.save()
-                messages.success(request, "Student Added Successfully!")
-                return redirect('add_student')
-            except:
-                messages.error(request, "Failed to Add Student!")
-                return redirect('add_student')
-        else:
-            return redirect('add_student')
-
-
+@login_required(login_url='login')
 def manage_student(request):
-    students = Students.objects.all()
-    context = {
-        "students": students
-    }
-    return render(request, 'hod_template/manage_student_template.html', context)
+    selected_khoi = request.GET.get("khoi")
+    selected_lop = request.GET.get("lop")
+    selected_namhoc = request.GET.get("namhoc")
 
+    khoi_list = [10, 11, 12]
+    ds_namhoc = LopHoc.objects.values_list("NamHOC", flat=True).distinct()
 
-def edit_student(request, student_id):
-    # Adding Student ID into Session Variable
-    request.session['student_id'] = student_id
-
-    student = Students.objects.get(admin=student_id)
-    form = EditStudentForm()
-    # Filling the form with Data from Database
-    form.fields['email'].initial = student.admin.email
-    form.fields['username'].initial = student.admin.username
-    form.fields['first_name'].initial = student.admin.first_name
-    form.fields['last_name'].initial = student.admin.last_name
-    form.fields['address'].initial = student.address
-    form.fields['course_id'].initial = student.course_id.id
-    form.fields['gender'].initial = student.gender
-    form.fields['session_year_id'].initial = student.session_year_id.id
-
-    context = {
-        "id": student_id,
-        "username": student.admin.username,
-        "form": form
-    }
-    return render(request, "hod_template/edit_student_template.html", context)
-
-
-def edit_student_save(request):
-    if request.method != "POST":
-        return HttpResponse("Invalid Method!")
+    if selected_khoi and selected_namhoc:
+        ds_lop = LopHoc.objects.filter(Khoi=selected_khoi, NamHOC=selected_namhoc)
+    elif selected_khoi:
+        ds_lop = LopHoc.objects.filter(Khoi=selected_khoi)
+    elif selected_namhoc:
+        ds_lop = LopHoc.objects.filter(NamHOC=selected_namhoc)
     else:
-        student_id = request.session.get('student_id')
-        if student_id == None:
-            return redirect('/manage_student')
+        ds_lop = LopHoc.objects.all()
 
-        form = EditStudentForm(request.POST, request.FILES)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            username = form.cleaned_data['username']
-            first_name = form.cleaned_data['first_name']
-            last_name = form.cleaned_data['last_name']
-            address = form.cleaned_data['address']
-            course_id = form.cleaned_data['course_id']
-            gender = form.cleaned_data['gender']
-            session_year_id = form.cleaned_data['session_year_id']
+    hs_lop_qs = HocSinhLop.objects.select_related("MaHS", "MaLOP")
 
-            # Getting Profile Pic first
-            # First Check whether the file is selected or not
-            # Upload only if file is selected
-            if len(request.FILES) != 0:
-                profile_pic = request.FILES['profile_pic']
-                fs = FileSystemStorage()
-                filename = fs.save(profile_pic.name, profile_pic)
-                profile_pic_url = fs.url(filename)
-            else:
-                profile_pic_url = None
+    if selected_khoi:
+        hs_lop_qs = hs_lop_qs.filter(MaLOP__Khoi=selected_khoi)
+    if selected_lop:
+        hs_lop_qs = hs_lop_qs.filter(MaLOP__MaLOP=selected_lop)
+    if selected_namhoc:
+        hs_lop_qs = hs_lop_qs.filter(NamHOC=selected_namhoc)
 
-            try:
-                # First Update into Custom User Model
-                user = CustomUser.objects.get(id=student_id)
-                user.first_name = first_name
-                user.last_name = last_name
-                user.email = email
-                user.username = username
-                user.save()
+    context = {
+        "ds_lop": LopHoc.objects.all(),
+        "ds_namhoc": ds_namhoc,
+        "khoi_list": khoi_list,
+        "selected_khoi": selected_khoi,
+        "selected_lop": selected_lop,
+        "selected_namhoc": selected_namhoc,
+        "danh_sach": hs_lop_qs
+    }
+    return render(request, "hod_template/manage_student_template.html", context)
 
-                # Then Update Students Table
-                student_model = Students.objects.get(admin=student_id)
-                student_model.address = address
+@login_required(login_url='login')
+def edit_student(request, mahs):
+    hoc_sinh = get_object_or_404(HocSinh, MaHS=mahs)
+    user = hoc_sinh.user
 
-                course = Courses.objects.get(id=course_id)
-                student_model.course_id = course
+    if request.method == "POST":
+        hoten = request.POST.get("HoTen")
+        email = request.POST.get("Email")
+        sdt = request.POST.get("SoDT")
+        ngaysinh = request.POST.get("NgaySinh")
+        gtinh = request.POST.get("GTinh")
+        password = request.POST.get("password")
 
-                session_year_obj = SessionYearModel.objects.get(id=session_year_id)
-                student_model.session_year_id = session_year_obj
+        hoc_sinh.HoTen = hoten
+        hoc_sinh.Email = email
+        hoc_sinh.SoDT = sdt
+        hoc_sinh.NgaySinh = ngaysinh
+        hoc_sinh.GTinh = gtinh
+        user.email = email
+        if password:
+            user.set_password(password)
 
-                student_model.gender = gender
-                if profile_pic_url != None:
-                    student_model.profile_pic = profile_pic_url
-                student_model.save()
-                # Delete student_id SESSION after the data is updated
-                del request.session['student_id']
+        user.save()
+        hoc_sinh.save()
 
-                messages.success(request, "Student Updated Successfully!")
-                return redirect('/edit_student/'+student_id)
-            except:
-                messages.success(request, "Failed to Uupdate Student.")
-                return redirect('/edit_student/'+student_id)
-        else:
-            return redirect('/edit_student/'+student_id)
+        messages.success(request, "Cập nhật học sinh thành công.")
 
+        # Redirect kèm tham số lọc
+        khoi = request.GET.get("khoi", "")
+        lop = request.GET.get("lop", "")
+        namhoc = request.GET.get("namhoc", "")
+        return HttpResponseRedirect(f"{reverse('manage_student')}?khoi={khoi}&lop={lop}&namhoc={namhoc}")
 
+    return render(request, "hod_template/edit_student_template.html", {"hoc_sinh": hoc_sinh})
+
+@login_required(login_url='login')
 def delete_student(request, student_id):
-    student = Students.objects.get(admin=student_id)
+    hoc_sinh = get_object_or_404(HocSinh, MaHS=student_id)
     try:
-        student.delete()
-        messages.success(request, "Student Deleted Successfully.")
-        return redirect('manage_student')
-    except:
-        messages.error(request, "Failed to Delete Student.")
-        return redirect('manage_student')
+        user = hoc_sinh.user  # lấy tài khoản liên kết
+        hoc_sinh.delete()
+        user.delete()  # xóa luôn tài khoản đăng nhập
+        messages.success(request, "Xóa học sinh thành công.")
+    except Exception as e:
+        messages.error(request, f"Xóa học sinh thất bại: {e}")
+    return redirect('manage_student')
 
+# ==== QL Lớp Học ====#
+@login_required(login_url='login')
+def manage_class(request):
+    selected_namhoc = request.GET.get("namhoc", "")
+    selected_khoi = request.GET.get("khoi", "")
 
-def add_subject(request):
-    courses = Courses.objects.all()
-    staffs = CustomUser.objects.filter(user_type='2')
+    # Danh sách năm học duy nhất
+    ds_namhoc = LopHoc.objects.values_list("NamHOC", flat=True).distinct().order_by("NamHOC")
+    khoi_list = [10, 11, 12]
+
+    # Lọc danh sách lớp học
+    ds_lop = LopHoc.objects.all()
+    if selected_namhoc:
+        ds_lop = ds_lop.filter(NamHOC=selected_namhoc)
+    if selected_khoi:
+        ds_lop = ds_lop.filter(Khoi=int(selected_khoi))
+
     context = {
-        "courses": courses,
-        "staffs": staffs
+        "danh_sach": ds_lop,
+        "ds_namhoc": ds_namhoc,
+        "khoi_list": khoi_list,
+        "selected_namhoc": selected_namhoc,
+        "selected_khoi": selected_khoi,
     }
-    return render(request, 'hod_template/add_subject_template.html', context)
+    return render(request, "hod_template/manage_class_template.html", context)
 
+@login_required(login_url='login')
+def add_class(request):
+    ds_namhoc = LopHoc.objects.values_list("NamHOC", flat=True).distinct()
+    ds_khoi = [10, 11, 12]
+    gv_list = GiaoVien.objects.all()
 
+    if request.method == "POST":
+        malop = request.POST.get("MaLOP")
+        tenlop = request.POST.get("TenLOP")
+        namhoc = request.POST.get("NamHOC")
+        khoi = request.POST.get("Khoi")
+        gvcn = request.POST.get("GVCN")
 
-def add_subject_save(request):
-    if request.method != "POST":
-        messages.error(request, "Method Not Allowed!")
-        return redirect('add_subject')
-    else:
-        subject_name = request.POST.get('subject')
+        if LopHoc.objects.filter(MaLOP=malop).exists():
+            messages.error(request, "Mã lớp đã tồn tại.")
+            return redirect("add_class")
 
-        course_id = request.POST.get('course')
-        course = Courses.objects.get(id=course_id)
-        
-        staff_id = request.POST.get('staff')
-        staff = CustomUser.objects.get(id=staff_id)
+        LopHoc.objects.create(
+            MaLOP=malop,
+            TenLOP=tenlop,
+            NamHOC=namhoc,
+            Khoi=int(khoi),
+            GVCN=GiaoVien.objects.get(id=gvcn) if gvcn else None
+        )
+        messages.success(request, "Thêm lớp học thành công.")
+        return redirect("manage_class")
+
+    return render(request, "hod_template/add_class_template.html", {
+        "ds_namhoc": ds_namhoc,
+        "ds_khoi": ds_khoi,
+        "gv_list": gv_list,
+    })
+
+@login_required(login_url='login')
+def edit_class(request, malop):
+    lop = get_object_or_404(LopHoc, MaLOP=malop)
+
+    if request.method == "POST":
+        ten_lop = request.POST.get("TenLOP")
+        nam_hoc = request.POST.get("NamHOC")
+        khoi = request.POST.get("Khoi")
+        gvcn_id = request.POST.get("GVCN")
+
+        lop.TenLOP = ten_lop
+        lop.NamHOC = nam_hoc
+        lop.Khoi = int(khoi)
+        lop.GVCN = GiaoVien.objects.get(id=gvcn_id) if gvcn_id else None
+        lop.save()
+
+        # ✅ Sử dụng redirect để quay về trang danh sách
+        messages.success(request, "Cập nhật lớp học thành công.")
+        return redirect("manage_class")
+
+    gv_list = GiaoVien.objects.all()
+    return render(request, "hod_template/edit_class_template.html", {"lop": lop, "gv_list": gv_list})
+
+# Quản lý giáo viên
+@login_required(login_url='login')
+def manage_teacher(request):
+    teachers = GiaoVien.objects.all()
+    return render(request, "hod_template/manage_teacher_template.html", {"teachers": teachers})
+
+@login_required(login_url='login')
+def teacher_profile(request, teacher_id):
+    teacher = get_object_or_404(GiaoVien, MaGV=teacher_id)
+    return render(request, "hod_template/teacher_profile.html", {"teacher": teacher})
+
+@login_required(login_url='login')
+def add_teacher(request):
+    if request.method == "POST":
+        magv = request.POST.get("MaGV")
+        hoten = request.POST.get("HoTen")
+        email = request.POST.get("email")
+        password = request.POST.get("password")
+        vai_tro = request.POST.get("VAI_TRO", "giao_vien")
+        sodt = request.POST.get("SoDT")
 
         try:
-            subject = Subjects(subject_name=subject_name, course_id=course, staff_id=staff)
-            subject.save()
-            messages.success(request, "Subject Added Successfully!")
-            return redirect('add_subject')
-        except:
-            messages.error(request, "Failed to Add Subject!")
-            return redirect('add_subject')
+            # Kiểm tra mã giáo viên trùng
+            if User.objects.filter(username=magv).exists():
+                messages.error(request, "Mã giáo viên đã tồn tại.")
+                return redirect("add_teacher")
 
+            # 1. Tạo tài khoản User
+            user = User.objects.create_user(
+                username=magv,
+                email=email,
+                password=password,
+                first_name=hoten.split(" ")[0],
+                last_name=" ".join(hoten.split(" ")[1:]),
+            )
 
-def manage_subject(request):
-    subjects = Subjects.objects.all()
-    context = {
-        "subjects": subjects
-    }
-    return render(request, 'hod_template/manage_subject_template.html', context)
+            # 2. Tạo GiaoVien liên kết với User
+            GiaoVien.objects.create(
+                user=user,
+                MaGV=magv,
+                HoTen=hoten,
+                VAI_TRO=vai_tro,
+                SoDT=sodt
+            )
 
+            messages.success(request, "Thêm giáo viên thành công.")
+            return redirect("manage_teacher")
+        except Exception as e:
+            messages.error(request, f"Lỗi khi thêm giáo viên: {e}")
+            return redirect("add_teacher")
 
-def edit_subject(request, subject_id):
-    subject = Subjects.objects.get(id=subject_id)
-    courses = Courses.objects.all()
-    staffs = CustomUser.objects.filter(user_type='2')
-    context = {
-        "subject": subject,
-        "courses": courses,
-        "staffs": staffs,
-        "id": subject_id
-    }
-    return render(request, 'hod_template/edit_subject_template.html', context)
+    return render(request, "hod_template/add_teacher.html")
 
+@login_required(login_url='login')
+@login_required(login_url='login')
+def edit_teacher(request, magv):
+    giaovien = get_object_or_404(GiaoVien, MaGV=magv)
+    user = giaovien.user
 
-def edit_subject_save(request):
-    if request.method != "POST":
-        HttpResponse("Invalid Method.")
-    else:
-        subject_id = request.POST.get('subject_id')
-        subject_name = request.POST.get('subject')
-        course_id = request.POST.get('course')
-        staff_id = request.POST.get('staff')
+    if request.method == "POST":
+        hoten = request.POST.get("HoTen")
+        email = request.POST.get("email")
+        sdt = request.POST.get("SoDT")
+        vai_tro = request.POST.get("VAI_TRO")
+        password = request.POST.get("password")
+
+        # Cập nhật thông tin
+        giaovien.HoTen = hoten
+        giaovien.VAI_TRO = vai_tro
+        giaovien.SoDT = sdt
+        user.email = email
+
+        if password:
+            user.password = make_password(password)
 
         try:
-            subject = Subjects.objects.get(id=subject_id)
-            subject.subject_name = subject_name
+            user.save()
+            giaovien.save()
+            messages.success(request, "Cập nhật giáo viên thành công.")
+        except Exception as e:
+            messages.error(request, f"Lỗi khi cập nhật: {e}")
+        return redirect("manage_teacher")
 
-            course = Courses.objects.get(id=course_id)
-            subject.course_id = course
+    return render(request, "hod_template/edit_teacher.html", {"giaovien": giaovien})
 
-            staff = CustomUser.objects.get(id=staff_id)
-            subject.staff_id = staff
-            
-            subject.save()
+@login_required(login_url='login')
+def delete_teacher(request, magv):
+    giaovien = get_object_or_404(GiaoVien, MaGV=magv)
+    try:
+        giaovien.delete()
+        messages.success(request, "Xóa giáo viên thành công.")
+    except Exception as e:
+        messages.error(request, f"Lỗi khi xóa giáo viên: {e}")
+    return redirect("manage_teacher")
 
-            messages.success(request, "Subject Updated Successfully.")
-            # return redirect('/edit_subject/'+subject_id)
-            return HttpResponseRedirect(reverse("edit_subject", kwargs={"subject_id":subject_id}))
+# @login_required(login_url='login')
+# def manage_class(request):
+#     classes = LopHoc.objects.all()
+#     return render(request, "hod_template/manage_class_template.html", {"classes": classes})
 
+
+@login_required(login_url='login')
+def assign_subject_to_class(request):
+    if request.method == "POST":
+        mamh = request.POST.get("MaMH")
+        malop = request.POST.get("MaLOP")
+        magv = request.POST.get("MaGV")
+        namhoc = request.POST.get("NamHOC")
+        try:
+            MonHocLop.objects.create(MaMHL=mamh+malop, MaMH_id=mamh, MaLOP_id=malop, MaGV_id=magv, NamHOC=namhoc)
+            messages.success(request, "Gán môn học vào lớp thành công!")
         except:
-            messages.error(request, "Failed to Update Subject.")
-            return HttpResponseRedirect(reverse("edit_subject", kwargs={"subject_id":subject_id}))
-            # return redirect('/edit_subject/'+subject_id)
+            messages.error(request, "Thất bại khi gán môn học!")
+    return redirect('manage_subjects')
 
+@login_required(login_url='login')
+def manage_scores(request):
+    results = KetQua.objects.select_related('hsid', 'ma_mhl').all()
+    return render(request, "hod_template/manage_scores_template.html", {"results": results})
 
+@login_required(login_url='login')
+def update_score(request, kqid):
+    result = get_object_or_404(KetQua, pk=kqid)
+    if request.method == "POST":
+        fields = [
+            'hk1_tx1','hk1_tx2','hk1_tx3','hk1_tx4','hk1_gk','hk1_ck',
+            'hk2_tx1','hk2_tx2','hk2_tx3','hk2_tx4','hk2_gk','hk2_ck'
+        ]
+        for field in fields:
+            setattr(result, field, request.POST.get(field))
+        result.save()
+        messages.success(request, "Cập nhật điểm thành công!")
+        return redirect('manage_scores')
+    return render(request, "hod_template/edit_score_template.html", {"result": result})
 
-def delete_subject(request, subject_id):
-    subject = Subjects.objects.get(id=subject_id)
-    try:
-        subject.delete()
-        messages.success(request, "Subject Deleted Successfully.")
-        return redirect('manage_subject')
-    except:
-        messages.error(request, "Failed to Delete Subject.")
-        return redirect('manage_subject')
-
-
-@csrf_exempt
-def check_email_exist(request):
-    email = request.POST.get("email")
-    user_obj = CustomUser.objects.filter(email=email).exists()
-    if user_obj:
-        return HttpResponse(True)
-    else:
-        return HttpResponse(False)
-
-
-@csrf_exempt
-def check_username_exist(request):
-    username = request.POST.get("username")
-    user_obj = CustomUser.objects.filter(username=username).exists()
-    if user_obj:
-        return HttpResponse(True)
-    else:
-        return HttpResponse(False)
-
-
-
-def student_feedback_message(request):
-    feedbacks = FeedBackStudent.objects.all()
-    context = {
-        "feedbacks": feedbacks
-    }
-    return render(request, 'hod_template/student_feedback_template.html', context)
-
+@login_required(login_url='login')
+def ykien_phuhuynh(request):
+    ykiens = YKien.objects.select_related('MaHS', 'MaPH').all()
+    return render(request, "hod_template/ykien_phuhuynh.html", {"ykiens": ykiens})
 
 @csrf_exempt
-def student_feedback_message_reply(request):
-    feedback_id = request.POST.get('id')
-    feedback_reply = request.POST.get('reply')
+@login_required(login_url='login')
+def reply_ykien_phuhuynh(request):
+    if request.method == "POST":
+        ykid = request.POST.get("YKID")
+        magv = request.POST.get("MaGV")
+        try:
+            YKienGV.objects.create(YKID_id=ykid, MaGV_id=magv)
+            return HttpResponse("OK")
+        except:
+            return HttpResponse("ERROR")
 
-    try:
-        feedback = FeedBackStudent.objects.get(id=feedback_id)
-        feedback.feedback_reply = feedback_reply
-        feedback.save()
-        return HttpResponse("True")
-
-    except:
-        return HttpResponse("False")
-
-
-def staff_feedback_message(request):
-    feedbacks = FeedBackStaffs.objects.all()
-    context = {
-        "feedbacks": feedbacks
-    }
-    return render(request, 'hod_template/staff_feedback_template.html', context)
-
-
-@csrf_exempt
-def staff_feedback_message_reply(request):
-    feedback_id = request.POST.get('id')
-    feedback_reply = request.POST.get('reply')
-
-    try:
-        feedback = FeedBackStaffs.objects.get(id=feedback_id)
-        feedback.feedback_reply = feedback_reply
-        feedback.save()
-        return HttpResponse("True")
-
-    except:
-        return HttpResponse("False")
-
-
-def student_leave_view(request):
-    leaves = LeaveReportStudent.objects.all()
-    context = {
-        "leaves": leaves
-    }
-    return render(request, 'hod_template/student_leave_view.html', context)
-
-def student_leave_approve(request, leave_id):
-    leave = LeaveReportStudent.objects.get(id=leave_id)
-    leave.leave_status = 1
-    leave.save()
-    return redirect('student_leave_view')
-
-
-def student_leave_reject(request, leave_id):
-    leave = LeaveReportStudent.objects.get(id=leave_id)
-    leave.leave_status = 2
-    leave.save()
-    return redirect('student_leave_view')
-
-
-def staff_leave_view(request):
-    leaves = LeaveReportStaff.objects.all()
-    context = {
-        "leaves": leaves
-    }
-    return render(request, 'hod_template/staff_leave_view.html', context)
-
-
-def staff_leave_approve(request, leave_id):
-    leave = LeaveReportStaff.objects.get(id=leave_id)
-    leave.leave_status = 1
-    leave.save()
-    return redirect('staff_leave_view')
-
-
-def staff_leave_reject(request, leave_id):
-    leave = LeaveReportStaff.objects.get(id=leave_id)
-    leave.leave_status = 2
-    leave.save()
-    return redirect('staff_leave_view')
-
-
-def admin_view_attendance(request):
-    subjects = Subjects.objects.all()
-    session_years = SessionYearModel.objects.all()
-    context = {
-        "subjects": subjects,
-        "session_years": session_years
-    }
-    return render(request, "hod_template/admin_view_attendance.html", context)
-
-
-@csrf_exempt
-def admin_get_attendance_dates(request):
-    # Getting Values from Ajax POST 'Fetch Student'
-    subject_id = request.POST.get("subject")
-    session_year = request.POST.get("session_year_id")
-
-    # Students enroll to Course, Course has Subjects
-    # Getting all data from subject model based on subject_id
-    subject_model = Subjects.objects.get(id=subject_id)
-
-    session_model = SessionYearModel.objects.get(id=session_year)
-
-    # students = Students.objects.filter(course_id=subject_model.course_id, session_year_id=session_model)
-    attendance = Attendance.objects.filter(subject_id=subject_model, session_year_id=session_model)
-
-    # Only Passing Student Id and Student Name Only
-    list_data = []
-
-    for attendance_single in attendance:
-        data_small={"id":attendance_single.id, "attendance_date":str(attendance_single.attendance_date), "session_year_id":attendance_single.session_year_id.id}
-        list_data.append(data_small)
-
-    return JsonResponse(json.dumps(list_data), content_type="application/json", safe=False)
-
-
-@csrf_exempt
-def admin_get_attendance_student(request):
-    # Getting Values from Ajax POST 'Fetch Student'
-    attendance_date = request.POST.get('attendance_date')
-    attendance = Attendance.objects.get(id=attendance_date)
-
-    attendance_data = AttendanceReport.objects.filter(attendance_id=attendance)
-    # Only Passing Student Id and Student Name Only
-    list_data = []
-
-    for student in attendance_data:
-        data_small={"id":student.student_id.admin.id, "name":student.student_id.admin.first_name+" "+student.student_id.admin.last_name, "status":student.status}
-        list_data.append(data_small)
-
-    return JsonResponse(json.dumps(list_data), content_type="application/json", safe=False)
-
-
+@login_required(login_url='login')
 def admin_profile(request):
-    user = CustomUser.objects.get(id=request.user.id)
+    return render(request, "hod_template/admin_profile.html", {"user": request.user})
 
-    context={
-        "user": user
-    }
-    return render(request, 'hod_template/admin_profile.html', context)
-
-
+@login_required(login_url='login')
 def admin_profile_update(request):
-    if request.method != "POST":
-        messages.error(request, "Invalid Method!")
-        return redirect('admin_profile')
-    else:
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        password = request.POST.get('password')
 
+    if request.method == "POST":
+        first_name = request.POST.get("first_name")
+        last_name = request.POST.get("last_name")
+        password = request.POST.get("password")
+
+        user = request.user
+        user.first_name = first_name
+        user.last_name = last_name
+        if password:
+            user.set_password(password)
+        user.save()
+        messages.success(request, "Cập nhật hồ sơ thành công")
+        return redirect("admin_profile")
+    return redirect("admin_profile")
+
+# QL chuyên môn
+@login_required(login_url='login')
+def assign_teacher_to_class(request):
+    namhoc = request.GET.get("namhoc")
+    khoi = request.GET.get("khoi")
+    malop = request.GET.get("malop")
+    mamh = request.GET.get("mamh")
+
+    ds_namhoc = LopHoc.objects.values_list("NamHOC", flat=True).distinct()
+    khoi_list = [10, 11, 12]
+    ds_monhoc = MonHoc.objects.all()
+    ds_lop = LopHoc.objects.none()
+    ds_giaovien = GiaoVien.objects.none()  # ✅ Mặc định là rỗng
+    phan_cong = None
+
+    # Nếu có năm học và khối → lọc lớp
+    if namhoc and khoi:
         try:
-            customuser = CustomUser.objects.get(id=request.user.id)
-            customuser.first_name = first_name
-            customuser.last_name = last_name
-            if password != None and password != "":
-                customuser.set_password(password)
-            customuser.save()
-            messages.success(request, "Profile Updated Successfully")
-            return redirect('admin_profile')
-        except:
-            messages.error(request, "Failed to Update Profile")
-            return redirect('admin_profile')
-    
+            khoi_int = int(khoi)
+            ds_lop = LopHoc.objects.filter(NamHOC=namhoc, Khoi=khoi_int)
+        except ValueError:
+            pass
+
+    # Nếu có cả lớp và môn học → lọc thêm giáo viên và phân công
+    if namhoc and khoi and malop and mamh:
+        try:
+            phan_cong = MonHocLop.objects.get(
+                NamHOC=namhoc, MaLOP__MaLOP=malop, MaMH__MaMH=mamh
+            )
+        except MonHocLop.DoesNotExist:
+            phan_cong = None
+
+        # 👉 Lọc giáo viên theo 2 ký tự cuối của mã môn học
+        suffix = mamh[-2:].upper()
+        ds_giaovien = GiaoVien.objects.filter(MaGV__iendswith=suffix)
+
+    # Xử lý khi POST (lưu phân công)
+    if request.method == "POST":
+        mamh_post = request.POST.get("mamh")
+        malop_post = request.POST.get("malop")
+        namhoc_post = request.POST.get("namhoc")
+        khoi_post = request.POST.get("khoi")
+        gv_id = request.POST.get("gv")
+
+        if mamh_post and malop_post and namhoc_post and gv_id:
+            mamhl = mamh_post + malop_post
+            mon = get_object_or_404(MonHoc, MaMH=mamh_post)
+            lop = get_object_or_404(LopHoc, MaLOP=malop_post, NamHOC=namhoc_post)
+            gv = get_object_or_404(GiaoVien, id=gv_id)
+
+            MonHocLop.objects.update_or_create(
+                MaMHL=mamhl,
+                defaults={"NamHOC": namhoc_post, "MaMH": mon, "MaLOP": lop, "MaGV": gv}
+            )
+
+            messages.success(request, "Phân công giảng dạy thành công!")
+            return redirect(f"{request.path}?namhoc={namhoc_post}&khoi={khoi_post}&malop={malop_post}&mamh={mamh_post}")
+
+    context = {
+        "ds_namhoc": ds_namhoc,
+        "khoi_list": khoi_list,
+        "ds_monhoc": ds_monhoc,
+        "ds_lop": ds_lop,
+        "ds_giaovien": ds_giaovien,
+        "phan_cong": phan_cong,
+        "selected_namhoc": namhoc,
+        "selected_khoi": khoi,
+        "selected_lop": malop,
+        "selected_mon": mamh,
+    }
+
+    return render(request, "hod_template/assign_teacher_template.html", context)
 
 
-def staff_profile(request):
-    pass
+@login_required(login_url='login')
+def add_subject(request):
+    if request.method == "POST":
+        mamh = request.POST.get("MaMH")
+        tenmh = request.POST.get("TenMH")
+        sotiet = request.POST.get("SoTiet")
+        kieudg = request.POST.get("KieuDG")
+
+        if MonHoc.objects.filter(MaMH=mamh).exists():
+            messages.error(request, "Mã môn học đã tồn tại!")
+        else:
+            MonHoc.objects.create(MaMH=mamh, TenMH=tenmh, SoTiet=sotiet, KieuDG=kieudg)
+            messages.success(request, "Thêm môn học thành công!")
+        return redirect("add_subject")
+
+    return render(request, "hod_template/add_subject_template.html")
+
+@login_required(login_url='login')
+def add_subject(request):
+    if request.method == "POST":
+        mamh = request.POST.get("MaMH")
+        tenmh = request.POST.get("TenMH")
+        sotiet = request.POST.get("SoTiet")
+        kieudg = request.POST.get("KieuDG")
+
+        if MonHoc.objects.filter(MaMH=mamh).exists():
+            messages.error(request, "Mã môn học đã tồn tại!")
+        else:
+            MonHoc.objects.create(MaMH=mamh, TenMH=tenmh, SoTiet=sotiet, KieuDG=kieudg)
+            messages.success(request, "Thêm môn học thành công!")
+        return redirect("add_subject")
+
+    return render(request, "hod_template/add_subject_template.html")
 
 
-def student_profile(requtest):
-    pass
+@login_required(login_url='login')
+def manage_subjects(request):
+    ds_monhoc = MonHoc.objects.all()
+    return render(request, "hod_template/manage_subjects.html", {
+        "ds_monhoc": ds_monhoc
+    })
 
+@login_required(login_url='login')
+def edit_subject(request, mamh):
+    monhoc = get_object_or_404(MonHoc, MaMH=mamh)
 
+    if request.method == "POST":
+        tenmh = request.POST.get("TenMH")
+        sotiet = request.POST.get("SoTiet")
+        kieudg = request.POST.get("KieuDG")
+
+        monhoc.TenMH = tenmh
+        monhoc.SoTiet = sotiet
+        monhoc.KieuDG = kieudg
+        monhoc.save()
+
+        messages.success(request, "Cập nhật môn học thành công!")
+        return redirect("manage_subjects")
+
+    return render(request, "hod_template/edit_subject_template.html", {"monhoc": monhoc})
+
+@login_required(login_url='login')
+def delete_subject(request, mamh):
+    try:
+        monhoc = get_object_or_404(MonHoc, MaMH=mamh)
+        monhoc.delete()
+        messages.success(request, f"Đã xóa môn học {mamh} thành công.")
+    except Exception as e:
+        messages.error(request, f"Lỗi khi xóa môn học: {e}")
+    return redirect("manage_subjects")
 

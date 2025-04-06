@@ -1,0 +1,40 @@
+{% extends 'hod_template/base_template.html' %}
+
+{% block page_title %}Chỉnh sửa lớp học{% endblock %}
+
+{% block main_content %}
+<div class="container mt-4">
+  <form method="POST">
+    {% csrf_token %}
+    <div class = "card-body">
+      <div class="form-group">
+        <label>Tên lớp:</label>
+        <input type="text" class="form-control" name="TenLOP" value="{{ lop.TenLOP }}">
+      </div>
+      <div class="form-group">
+        <label>Năm học:</label>
+        <input type="text" class="form-control" name="NamHOC" value="{{ lop.NamHOC }}">
+      </div>
+      <div class="form-group">
+        <label>Khối:</label>
+        <input type="number" class="form-control" name="Khoi" value="{{ lop.Khoi }}">
+      </div>
+      <div class="form-group">
+        <label>GVCN:</label>
+        <select class="form-control" name="GVCN">
+          <option value="">-- Chọn giáo viên --</option>
+          {% for gv in gv_list %}
+            <option value="{{ gv.id }}" {% if lop.GVCN.id == gv.id %}selected{% endif %}>{{ gv.HoTen }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+    </div>
+  
+    <div class="card-footer text-right">
+      <button type="submit" class="btn btn-success">Lưu thay đổi</button>
+      <a href="{% url 'manage_class' %}" class="btn btn-secondary">Quay lại</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

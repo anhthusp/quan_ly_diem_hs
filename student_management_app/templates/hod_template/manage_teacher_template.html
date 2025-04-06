@@ -1,0 +1,75 @@
+{% extends 'hod_template/base_template.html' %}
+{% load static %}
+
+{% comment %} {% block page_title %}
+Danh sách giáo viên
+{% endblock %} {% endcomment %}
+
+{% block main_content %}
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <h4 class="mb-0">
+        <i class="fas fa-users mr-2"></i> Danh sách giáo viên
+      </h4>
+      <a href="{% url 'add_teacher' %}" class="btn btn-danger font-weight-bold">
+        <i class="fas fa-user-plus"></i> Thêm giáo viên
+      </a>
+    </div>
+
+    <div class="card-body">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered">
+          <thead class="thead-dark text-center">
+            <tr>
+              <th>#</th>
+              <th>Mã GV</th>
+              <th>Họ tên</th>
+              <th>Vai trò</th>
+              <th>Email</th>
+              <th>Số điện thoại</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for gv in teachers %}
+              <tr class="text-center align-middle">
+                <td>{{ forloop.counter }}</td>
+                <td>{{ gv.MaGV }}</td>
+                <td>{{ gv.HoTen }}</td>
+                <td><span class="badge badge-info">{{ gv.get_VAI_TRO_display }}</span></td>
+                <td>{{ gv.user.email }}</td>
+                <td>{{ gv.SoDT }}</td>
+                <td>
+                  <a href="{% url 'edit_teacher' gv.MaGV %}" class="btn btn-sm btn-warning" title="Sửa">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{% url 'delete_teacher' gv.MaGV %}" class="btn btn-sm btn-danger" title="Xóa"
+                     onclick="return confirm('Bạn có chắc chắn muốn xóa giáo viên này không?')">
+                    <i class="fas fa-trash-alt"></i>
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted">Chưa có giáo viên nào được thêm.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

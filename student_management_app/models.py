@@ -1,199 +1,169 @@
-from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+from django.contrib.auth.models import User
+
+# === GIAO VIEN ===
+class GiaoVien(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    MaGV = models.CharField(max_length=10, unique=True)
+    HoTen = models.CharField(max_length=100)
+    SoDT = models.CharField(max_length=15, null=True, blank=True)
+    VAI_TRO = models.CharField(
+        max_length=20,
+        choices=[
+            ("admin", "Admin"),
+            ("ban_giam_hieu", "Ban Giám Hiệu"),
+            ("giao_vien", "Giáo Viên"),
+        ],
+        default="giao_vien",
+    )
+
+    def __str__(self):
+        return f"{self.HoTen} ({self.MaGV}) - {self.VAI_TRO}"
+
+    class Meta:
+        db_table = "GIAOVIEN"
 
 
+# === HOC SINH ===
+class HocSinh(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    MaHS = models.CharField(max_length=15, unique=True)
+    HoTen = models.CharField(max_length=100)
+    NgaySinh = models.DateField()
+    GTinh = models.CharField(max_length=5)
+    Email = models.EmailField(null=True, blank=True)
+    SoDT = models.CharField(max_length=15, null=True, blank=True)
+    MaPH = models.ForeignKey('PhuHuynh', on_delete=models.SET_NULL, null=True, blank=True)
 
-class SessionYearModel(models.Model):
-    id = models.AutoField(primary_key=True)
-    session_start_year = models.DateField()
-    session_end_year = models.DateField()
-    objects = models.Manager()
+    def __str__(self):
+        return f"{self.HoTen} ({self.MaHS})"
 
-
-
-# Overriding the Default Django Auth User and adding One More Field (user_type)
-class CustomUser(AbstractUser):
-    user_type_data = ((1, "HOD"), (2, "Staff"), (3, "Student"))
-    user_type = models.CharField(default=1, choices=user_type_data, max_length=10)
-
-
-
-class AdminHOD(models.Model):
-    id = models.AutoField(primary_key=True)
-    admin = models.OneToOneField(CustomUser, on_delete = models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
+    class Meta:
+        db_table = "HOCSINH"
 
 
-class Staffs(models.Model):
-    id = models.AutoField(primary_key=True)
-    admin = models.OneToOneField(CustomUser, on_delete = models.CASCADE)
-    address = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
+# === PHU HUYNH ===
+class PhuHuynh(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    MaPH = models.CharField(max_length=10, unique=True)
+    HoTen = models.CharField(max_length=100)
+    Email = models.EmailField(null=True, blank=True)
+    SoDT = models.CharField(max_length=15, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.HoTen} ({self.MaPH})"
+
+    class Meta:
+        db_table = "PHUHUYNH"
 
 
+# === MON HOC ===
+class MonHoc(models.Model):
+    MaMH = models.CharField(max_length=10, primary_key=True)
+    TenMH = models.CharField(max_length=50)
+    SoTiet = models.IntegerField()
+    KieuDG = models.CharField(max_length=25)
 
-class Courses(models.Model):
-    id = models.AutoField(primary_key=True)
-    course_name = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
+    def __str__(self):
+        return self.TenMH
 
-    # def __str__(self):
-	#     return self.course_name
-
-
-
-class Subjects(models.Model):
-    id =models.AutoField(primary_key=True)
-    subject_name = models.CharField(max_length=255)
-    course_id = models.ForeignKey(Courses, on_delete=models.CASCADE, default=1) #need to give defauult course
-    staff_id = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
+    class Meta:
+        db_table = "MONHOC"
 
 
+# === LOP HOC ===
+class LopHoc(models.Model):
+    MaLOP = models.CharField(max_length=5, primary_key=True)
+    TenLOP = models.CharField(max_length=15)
+    NamHOC = models.CharField(max_length=15)
+    Khoi = models.IntegerField()
+    GVCN = models.ForeignKey(GiaoVien, on_delete=models.SET_NULL, null=True, blank=True)
 
-class Students(models.Model):
-    id = models.AutoField(primary_key=True)
-    admin = models.OneToOneField(CustomUser, on_delete = models.CASCADE)
-    gender = models.CharField(max_length=50)
-    profile_pic = models.FileField()
-    address = models.TextField()
-    course_id = models.ForeignKey(Courses, on_delete=models.DO_NOTHING, default=1)
-    session_year_id = models.ForeignKey(SessionYearModel, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
+    def __str__(self):
+        return f"{self.TenLOP} - {self.NamHOC}"
 
-
-class Attendance(models.Model):
-    # Subject Attendance
-    id = models.AutoField(primary_key=True)
-    subject_id = models.ForeignKey(Subjects, on_delete=models.DO_NOTHING)
-    attendance_date = models.DateField()
-    session_year_id = models.ForeignKey(SessionYearModel, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
+    class Meta:
+        db_table = "LOPHOC"
 
 
-class AttendanceReport(models.Model):
-    # Individual Student Attendance
-    id = models.AutoField(primary_key=True)
-    student_id = models.ForeignKey(Students, on_delete=models.DO_NOTHING)
-    attendance_id = models.ForeignKey(Attendance, on_delete=models.CASCADE)
-    status = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
+# === HOC SINH LOP ===
+class HocSinhLop(models.Model):
+    HSID = models.AutoField(primary_key=True)
+    MaHS = models.ForeignKey(HocSinh, on_delete=models.CASCADE)
+    MaLOP = models.ForeignKey(LopHoc, on_delete=models.CASCADE)
+    NamHOC = models.CharField(max_length=15)
+
+    class Meta:
+        db_table = "HOCSINH_LOP"
 
 
-class LeaveReportStudent(models.Model):
-    id = models.AutoField(primary_key=True)
-    student_id = models.ForeignKey(Students, on_delete=models.CASCADE)
-    leave_date = models.CharField(max_length=255)
-    leave_message = models.TextField()
-    leave_status = models.IntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
+# === MON HOC LOP ===
+class MonHocLop(models.Model):
+    MaMHL = models.CharField(max_length=10, primary_key=True)
+    NamHOC = models.CharField(max_length=10)
+    MaMH = models.ForeignKey(MonHoc, on_delete=models.CASCADE)
+    MaLOP = models.ForeignKey(LopHoc, on_delete=models.CASCADE)
+    MaGV = models.ForeignKey(GiaoVien, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "MONHOC_LOP"
 
 
-class LeaveReportStaff(models.Model):
-    id = models.AutoField(primary_key=True)
-    staff_id = models.ForeignKey(Staffs, on_delete=models.CASCADE)
-    leave_date = models.CharField(max_length=255)
-    leave_message = models.TextField()
-    leave_status = models.IntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
+# === KET QUA ===
+class KetQua(models.Model):
+    kqid = models.AutoField(primary_key=True)
+    hsid = models.ForeignKey(HocSinhLop, on_delete=models.CASCADE)
+    ma_mhl = models.ForeignKey(MonHocLop, on_delete=models.CASCADE)
+    nam_hoc = models.CharField(max_length=10)
+
+    hk1_tx1 = models.FloatField(null=True, blank=True)
+    hk1_tx2 = models.FloatField(null=True, blank=True)
+    hk1_tx3 = models.FloatField(null=True, blank=True)
+    hk1_tx4 = models.FloatField(null=True, blank=True)
+    hk1_gk = models.FloatField(null=True, blank=True)
+    hk1_ck = models.FloatField(null=True, blank=True)
+    hk2_tx1 = models.FloatField(null=True, blank=True)
+    hk2_tx2 = models.FloatField(null=True, blank=True)
+    hk2_tx3 = models.FloatField(null=True, blank=True)
+    hk2_tx4 = models.FloatField(null=True, blank=True)
+    hk2_gk = models.FloatField(null=True, blank=True)
+    hk2_ck = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        db_table = "KETQUA"
 
 
-class FeedBackStudent(models.Model):
-    id = models.AutoField(primary_key=True)
-    student_id = models.ForeignKey(Students, on_delete=models.CASCADE)
-    feedback = models.TextField()
-    feedback_reply = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
+# === HOC BA ===
+class HocBa(models.Model):
+    HBID = models.AutoField(primary_key=True)
+    HSID = models.ForeignKey(HocSinhLop, on_delete=models.CASCADE)
+    NamHOC = models.CharField(max_length=10)
+    XepLoaiHK1_HL = models.CharField(max_length=10)
+    XepLoaiHK2_HL = models.CharField(max_length=10)
+    XepLoaiHK1_RL = models.CharField(max_length=10)
+    XepLoaiHK2_RL = models.CharField(max_length=10)
+
+    class Meta:
+        db_table = "HOCBA"
 
 
-class FeedBackStaffs(models.Model):
-    id = models.AutoField(primary_key=True)
-    staff_id = models.ForeignKey(Staffs, on_delete=models.CASCADE)
-    feedback = models.TextField()
-    feedback_reply = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
+# === Y KIEN ===
+class YKien(models.Model):
+    YKID = models.AutoField(primary_key=True)
+    MaHS = models.ForeignKey(HocSinh, on_delete=models.CASCADE)
+    MaPH = models.ForeignKey(PhuHuynh, on_delete=models.CASCADE)
+    NoiDung = models.TextField()
+    ThoiGianGui = models.DateTimeField(auto_now_add=True)
+    TrangThai = models.CharField(max_length=20)
+
+    class Meta:
+        db_table = "YKIEN"
 
 
+class YKienGV(models.Model):
+    YKID = models.ForeignKey(YKien, on_delete=models.CASCADE)
+    MaGV = models.ForeignKey(GiaoVien, on_delete=models.CASCADE)
 
-class NotificationStudent(models.Model):
-    id = models.AutoField(primary_key=True)
-    student_id = models.ForeignKey(Students, on_delete=models.CASCADE)
-    message = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
-
-
-class NotificationStaffs(models.Model):
-    id = models.AutoField(primary_key=True)
-    stafff_id = models.ForeignKey(Staffs, on_delete=models.CASCADE)
-    message = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
-
-
-class StudentResult(models.Model):
-    id = models.AutoField(primary_key=True)
-    student_id = models.ForeignKey(Students, on_delete=models.CASCADE)
-    subject_id = models.ForeignKey(Subjects, on_delete=models.CASCADE)
-    subject_exam_marks = models.FloatField(default=0)
-    subject_assignment_marks = models.FloatField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    objects = models.Manager()
-
-
-#Creating Django Signals
-
-# It's like trigger in database. It will run only when Data is Added in CustomUser model
-
-@receiver(post_save, sender=CustomUser)
-# Now Creating a Function which will automatically insert data in HOD, Staff or Student
-def create_user_profile(sender, instance, created, **kwargs):
-    # if Created is true (Means Data Inserted)
-    if created:
-        # Check the user_type and insert the data in respective tables
-        if instance.user_type == 1:
-            AdminHOD.objects.create(admin=instance)
-        if instance.user_type == 2:
-            Staffs.objects.create(admin=instance)
-        if instance.user_type == 3:
-            Students.objects.create(admin=instance, course_id=Courses.objects.get(id=1), session_year_id=SessionYearModel.objects.get(id=1), address="", profile_pic="", gender="")
-    
-
-@receiver(post_save, sender=CustomUser)
-def save_user_profile(sender, instance, **kwargs):
-    if instance.user_type == 1:
-        instance.adminhod.save()
-    if instance.user_type == 2:
-        instance.staffs.save()
-    if instance.user_type == 3:
-        instance.students.save()
-    
-
-
+    class Meta:
+        unique_together = (('YKID', 'MaGV'),)
+        db_table = "YKIEN_GV"

@@ -1,109 +1,134 @@
 {% extends 'hod_template/base_template.html' %}
-
-{% block page_title %}
-    Add Student
-{% endblock page_title %}
-
-{% block main_content %}
-
 {% load static %}
+{% block page_title %}Thêm học sinh{% endblock %}
+{% block main_content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h4><i class="fas fa-user-plus"></i> Thêm học sinh mới</h4>
+    </div>
 
-<section class="content">
-        <div class="container-fluid">
+    <form method="POST">
+      {% csrf_token %}
+      <div class="card-body">
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          {% endfor %}
+        {% endif %}
 
-            <div class="row">
-                <div class="col-md-12">
-                    <!-- general form elements -->
-                    <div class="card card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title">Add Student</h3>
-                    </div>
-                    <!-- /.card-header -->
-                    <!-- form start -->
-                    {% url 'add_student_save' as action_path %}
-                    {% include 'hod_template/form_template.html' with messages=messages form=form action_path=action_path button_text="Add Student" %}
+        <!-- THÔNG TIN HỌC SINH -->
+        <h5 class="text-info font-weight-bold">1. Thông tin học sinh</h5>
+        <div class="row">
+          <div class="form-group col-md-4">
+            <label>Mã học sinh</label>
+            <input type="text" class="form-control" name="MaHS" placeholder="VD: HS230001" required>
+          </div>
+          <div class="form-group col-md-4">
+            <label>Họ và tên</label>
+            <input type="text" class="form-control" name="HoTen" required>
+          </div>
+          <div class="form-group col-md-4">
+            <label>Giới tính</label>
+            <select class="form-control" name="GTinh" required>
+              <option value="">-- Chọn --</option>
+              <option value="Nam">Nam</option>
+              <option value="Nữ">Nữ</option>
+            </select>
+          </div>
+        </div>
 
-                    </div>
-                    <!-- /.card -->
+        <div class="row">
+          <div class="form-group col-md-4">
+            <label>Ngày sinh</label>
+            <input type="date" class="form-control" name="NgaySinh" required>
+          </div>
+          <div class="form-group col-md-4">
+            <label>Email</label>
+            <input type="email" class="form-control" name="Email">
+          </div>
+          <div class="form-group col-md-4">
+            <label>Số điện thoại</label>
+            <input type="text" class="form-control" name="SoDT">
+          </div>
+        </div>
 
-                </div>
-            </div>
+        <div class="form-group">
+          <label>Mật khẩu</label>
+          <input type="password" class="form-control" name="password" required>
+        </div>
 
-        </div><!-- /.container-fluid -->
-      </section>
+        <hr>
 
-  {% endblock main_content %}
+        <!-- THÔNG TIN LỚP HỌC -->
+        <h5 class="text-info font-weight-bold">2. Thông tin lớp học</h5>
+        <div class="row">
+          <div class="form-group col-md-4">
+            <label>Năm học</label>
+            <select name="namhoc" id="namhoc" class="form-control" required>
+              <option value="">-- Chọn năm học --</option>
+              {% for nh in ds_namhoc %}
+                <option value="{{ nh }}">{{ nh }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group col-md-4">
+            <label>Khối</label>
+            <select name="khoi" id="khoi" class="form-control" required>
+              <option value="">-- Chọn khối --</option>
+              {% for k in ds_khoi %}
+                <option value="{{ k }}">Khối {{ k }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group col-md-4">
+            <label>Lớp</label>
+            <select name="lop" id="lop" class="form-control" required>
+              <option value="">-- Chọn lớp --</option>
+              {% for lop in ds_lop %}
+                <option value="{{ lop.MaLOP }}" data-khoi="{{ lop.Khoi }}" data-namhoc="{{ lop.NamHOC }}">
+                  {{ lop.TenLOP }} ({{ lop.NamHOC }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
 
-  {% block custom_js %}
-    {% comment %} Checking if email and username already exists or not usin Ajax {% endcomment %}
+      <div class="card-footer text-right">
+        <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Lưu</button>
+        <a href="{% url 'manage_student' %}" class="btn btn-secondary">Quay lại</a>
+      </div>
+    </form>
+  </div>
+</div>
 
-    <script>
-        $(document).ready(function(){
-            // keyup event will be triggered when user leaves keyboard
-            $("#id_email").keyup(function(){
-                var email = $(this).val();
+<!-- Script lọc lớp theo khối + năm học -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const namhocSelect = document.getElementById("namhoc");
+    const khoiSelect = document.getElementById("khoi");
+    const lopSelect = document.getElementById("lop");
 
-                if(email!=""){
-                    $.ajax({
-                        url : '{% url 'check_email_exist' %}',
-                        type : 'POST',
-                        data : {email:email}
-                    })
-                    .done(function(response){
-                        //console.log(response);
+    function filterLopOptions() {
+      const namhoc = namhocSelect.value;
+      const khoi = khoiSelect.value;
 
-                        if(response == "True"){
-                            $(".email_error").remove();
-                            $("<span class='email_error' style='color: red; padding: 5px; font-weight: bold;'> Email Not Available. </span>").insertAfter("#id_email")
-                        }
-                        else{
-                            $(".email_error").remove();
-                            $("<span class='email_error' style='color: green; padding: 5px; font-weight: bold;'> Email Available. </span>").insertAfter("#id_email")
-                        }
-                    })
+      Array.from(lopSelect.options).forEach(option => {
+        const nh = option.getAttribute("data-namhoc");
+        const k = option.getAttribute("data-khoi");
+        option.style.display = (nh === namhoc && k === khoi) ? "block" : "none";
+      });
 
-                    .fail(function(){
-                        console.log("Failed");
-                    })
-                }
-                else{
-                    $(".email_error").remove();
-                }
-                
-            })
+      lopSelect.value = "";
+    }
 
-            $("#id_username").keyup(function(){
-                var username = $(this).val();
-                
-                if(username!=""){
-                    $.ajax({
-                        url : '{% url 'check_username_exist' %}',
-                        type : 'POST',
-                        data : {username:username}
-                    })
-                    .done(function(response){
-                        //console.log(response);
-
-                        if(response == "True"){
-                            $(".username_error").remove();
-                            $("<span class='username_error' style='color: red; padding: 5px; font-weight: bold;'> Username Not Available. </span>").insertAfter("#id_username")
-                        }
-                        else{
-                            $(".username_error").remove();
-                            $("<span class='username_error' style='color: green; padding: 5px; font-weight: bold;'> Username Available. </span>").insertAfter("#id_username")
-                        }
-                    })
-
-                    .fail(function(){
-                        console.log("Failed");
-                    })
-                }
-                else{
-                    $(".username_error").remove();
-                }
-                
-            })
-        })
-    </script>
-
-  {% endblock custom_js %}
+    namhocSelect.addEventListener("change", filterLopOptions);
+    khoiSelect.addEventListener("change", filterLopOptions);
+    filterLopOptions();
+  });
+</script>
+{% endblock %}

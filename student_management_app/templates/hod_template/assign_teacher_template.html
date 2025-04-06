@@ -1,0 +1,81 @@
+{% extends 'hod_template/base_template.html' %}
+{% load static %}
+
+{% block page_title %}Phân công giảng dạy{% endblock %}
+
+{% block main_content %}
+<div class="container mt-4">
+  <h3>Phân công giảng dạy</h3>
+
+  <form method="GET" class="form-inline mb-4">
+    <label class="mr-2 font-weight-bold">Năm học:</label>
+    <select name="namhoc" class="form-control mr-3" onchange="this.form.submit()">
+      <option value="">-- Chọn năm học --</option>
+      {% for nh in ds_namhoc %}
+        <option value="{{ nh }}" {% if nh == selected_namhoc %}selected{% endif %}>{{ nh }}</option>
+      {% endfor %}
+    </select>
+
+    <label class="mr-2 font-weight-bold">Khối:</label>
+    <select name="khoi" class="form-control mr-3" onchange="this.form.submit()">
+      <option value="">-- Chọn khối --</option>
+      {% for k in khoi_list %}
+        <option value="{{ k }}" {% if k|stringformat:"s" == selected_khoi %}selected{% endif %}>Khối {{ k }}</option>
+      {% endfor %}
+    </select>
+
+    <label class="mr-2 font-weight-bold">Lớp:</label>
+    <select name="malop" class="form-control mr-3">
+      <option value="">-- Chọn lớp --</option>
+      {% for lop in ds_lop %}
+        <option value="{{ lop.MaLOP }}" {% if lop.MaLOP == selected_lop %}selected{% endif %}>{{ lop.TenLOP }}</option>
+      {% endfor %}
+    </select>
+
+    <label class="mr-2 font-weight-bold">Môn học:</label>
+    <select name="mamh" class="form-control mr-3">
+      <option value="">-- Chọn môn học --</option>
+      {% for mon in ds_monhoc %}
+        <option value="{{ mon.MaMH }}" {% if mon.MaMH == selected_mon %}selected{% endif %}>{{ mon.TenMH }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="btn btn-primary">Lọc</button>
+  </form>
+
+  {% if selected_namhoc and selected_khoi and selected_lop and selected_mon %}
+    <form method="POST" class="mt-4">
+      {% csrf_token %}
+      <input type="hidden" name="namhoc" value="{{ selected_namhoc }}">
+      <input type="hidden" name="khoi" value="{{ selected_khoi }}">
+      <input type="hidden" name="malop" value="{{ selected_lop }}">
+      <input type="hidden" name="mamh" value="{{ selected_mon }}">
+
+      <p><strong>Chọn giáo viên giảng dạy môn {{ selected_mon }} cho khối {{ selected_khoi }} - Năm học {{ selected_namhoc }}:</strong></p>
+
+      <select class="form-control mb-3" name="gv" required>
+        <option value="">-- Chọn giáo viên --</option>
+        {% for gv in ds_giaovien %}
+          <option value="{{ gv.id }}" {% if phan_cong and phan_cong.MaGV.id == gv.id %}selected{% endif %}>
+            {{ gv.HoTen }} ({{ gv.MaGV }})
+          </option>
+        {% endfor %}
+      </select>
+      
+
+      <button type="submit" class="btn btn-success">
+        <i class="fas fa-save"></i> Lưu phân công
+      </button>
+    </form>
+
+  {% endif %}
+
+  {% if messages %}
+    <div class="mt-3">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

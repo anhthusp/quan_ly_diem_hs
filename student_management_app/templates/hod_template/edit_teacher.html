@@ -1,0 +1,71 @@
+{% extends 'hod_template/base_template.html' %}
+{% load static %}
+
+{% block page_title %}
+Chỉnh sửa thông tin giáo viên
+{% endblock %}
+
+{% block main_content %}
+<div class="container mt-4">
+  <div class="card card-warning">
+    <div class="card-header bg-primary text-white">
+      <h3 class="card-title"><i class="fas fa-edit"></i> Chỉnh sửa giáo viên</h3>
+    </div>
+
+    <form method="POST">
+      {% csrf_token %}
+      <div class="card-body">
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <div class="form-group">
+          <label for="MaGV">Mã giáo viên</label>
+          <input type="text" class="form-control" name="MaGV" value="{{ giaovien.MaGV }}" readonly>
+        </div>
+
+        <div class="form-group">
+          <label for="HoTen">Họ tên</label>
+          <input type="text" class="form-control" name="HoTen" value="{{ giaovien.HoTen }}" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" class="form-control" name="email" value="{{ giaovien.user.email }}" required>
+        </div>
+
+        <div class="form-group">
+          <label for="SoDT">Số điện thoại</label>
+          <input type="text" class="form-control" name="SoDT" value="{{ giaovien.SoDT }}">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mật khẩu mới (bỏ trống nếu không đổi)</label>
+          <input type="password" class="form-control" name="password" placeholder="Nhập mật khẩu mới nếu cần">
+        </div>
+
+        <div class="form-group">
+          <label for="VAI_TRO">Vai trò</label>
+          <select name="VAI_TRO" class="form-control">
+            <option value="giao_vien" {% if giaovien.VAI_TRO == "giao_vien" %}selected{% endif %}>Giáo viên</option>
+            <option value="ban_giam_hieu" {% if giaovien.VAI_TRO == "ban_giam_hieu" %}selected{% endif %}>Ban giám hiệu</option>
+            <option value="admin" {% if giaovien.VAI_TRO == "admin" %}selected{% endif %}>Admin</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card-footer text-right">
+        <button type="submit" class="btn btn-success text-white"><i class="fas fa-save"></i> Lưu thay đổi</button>
+        <a href="{% url 'manage_teacher' %}" class="btn btn-secondary ml-2">Quay lại</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

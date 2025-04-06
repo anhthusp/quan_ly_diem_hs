@@ -5,7 +5,7 @@
       <a href="{% url 'staff_home' %}" class="brand-link">
         <img src="{% static 'dist/img/AdminLTELogo.png' %}" alt="AdminLTE Logo" class="brand-image img-circle elevation-3"
             style="opacity: .8">
-        <span class="brand-text font-weight-light">Open University</span>
+        <span class="brand-text font-weight-light">Web Quản Lý Điểm HS THPT</span>
       </a>
 
       <!-- Sidebar -->
@@ -13,10 +13,10 @@
         <!-- Sidebar user panel (optional) -->
         <div class="user-panel mt-3 pb-3 mb-3 d-flex">
           <div class="image">
-            <img src="{% static 'dist/img/user2-160x160.jpg' %}" class="img-circle elevation-2" alt="User Image">
+            {% comment %} <img src="{% static 'dist/img/user2-160x160.jpg' %}" class="img-circle elevation-2" alt="User Image"> {% endcomment %}
           </div>
           <div class="info">
-            <a href="{% url 'staff_profile' %}" class="d-block">{{ user.first_name }} {{ user.last_name }}</a>
+            <a href="{% url 'staff_profile' %}" class="d-block">Lê Khải</a>
           </div>
         </div>
 

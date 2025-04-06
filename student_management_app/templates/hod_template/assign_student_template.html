@@ -1,0 +1,196 @@
+{% extends 'hod_template/base_template.html' %}
+{% load static %}
+
+{% block page_title %}Gán học sinh vào lớp mới{% endblock %}
+
+{% block main_content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h4><i class="fas fa-random"></i> Gán học sinh vào lớp mới</h4>
+    </div>
+    <div class="card-body">
+      {% if messages %}
+        {% for message in messages %}
+         <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+         {% endfor %}
+      {% endif %}
+
+
+      <div class="alert alert-info">
+        <strong>Hướng dẫn:</strong>
+        <ul class="mb-0">
+          <li>Chọn <strong>Năm học</strong>, <strong>Khối</strong>, và <strong>Lớp trước đó</strong> để lọc danh sách học sinh.</li>
+          <li>Tích chọn học sinh cần gán vào lớp mới.</li>
+          <li>Chọn <strong>Năm học hiện tại</strong>, <strong>Khối hiện tại</strong> và <strong>Lớp hiện tại</strong>.</li>
+          <li>Nhấn nút <strong>Gán học sinh</strong> để hoàn tất.</li>
+        </ul>
+      </div>
+
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <label for="old_namhoc">Năm học trước</label>
+          <select id="old_namhoc" class="form-control">
+            <option value="">-- Chọn năm học --</option>
+            {% for nh in ds_namhoc %}
+              <option value="{{ nh }}" {% if old_namhoc == nh %}selected{% endif %}>{{ nh }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label for="old_khoi">Khối</label>
+          <select id="old_khoi" class="form-control">
+            <option value="">-- Chọn khối --</option>
+            {% for k in khoi_list %}
+              <option value="{{ k }}" {% if old_khoi|stringformat:"s" == k|stringformat:"s" %}selected{% endif %}>Khối {{ k }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label for="old_lop">Lớp</label>
+          <select id="old_lop" class="form-control">
+            <option value="">-- Chọn lớp --</option>
+            {% for lop in ds_lop %}
+              <option value="{{ lop.MaLOP }}" data-khoi="{{ lop.Khoi }}" data-namhoc="{{ lop.NamHOC }}" {% if old_lop == lop.MaLOP %}selected{% endif %}>{{ lop.TenLOP }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3 d-flex align-items-end">
+          <button class="btn btn-primary w-100" onclick="locLopCu()"><i class="fas fa-search"></i> Lọc</button>
+        </div>
+      </div>
+
+      {% if danh_sach %}
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-2 text-muted">
+          <i class="fas fa-info-circle text-info"></i> Tích <strong>"Chọn tất cả"</strong> để chọn nhanh toàn bộ học sinh trong danh sách.
+        </div>
+        <table class="table table-bordered text-center">
+          <thead class="thead-light">
+            <tr>
+              <th class="text-center align-middle">
+                <strong>Chọn tất cả</strong> <br>
+                <input type="checkbox" id="checkAll"></th>
+              <th class="text-center align-middle">Mã HS</th>
+              <th class="text-center align-middle">Họ tên</th>
+              <th class="text-center align-middle">Ngày sinh</th>
+              <th class="text-center align-middle">Lớp cũ</th>
+              <th class="text-center align-middle">Các lớp đã gán</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for hs in danh_sach %}
+            <tr>
+              <td class="text-center align-middle" ><input type="checkbox" name="selected_students" value="{{ hs.MaHS.MaHS }}"></td>
+              <td class="text-center align-middle" >{{ hs.MaHS.MaHS }}</td>
+              <td class="text-center align-middle" >{{ hs.MaHS.HoTen }}</td>
+              <td class="text-center align-middle" >{{ hs.MaHS.NgaySinh|date:"d/m/Y" }}</td>
+              <td class="text-center align-middle">{{ hs.MaLOP.TenLOP }}</td>
+              <td class="text-center align-middle">
+                {% for tenlop, namhoc in hs.da_gan_list %}
+                  <span class="badge badge-info">{{ tenlop }} - {{ namhoc }}</span><br/>
+                {% empty %}
+                  <span class="text-muted">Chưa có</span>
+                {% endfor %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label>Năm học hiện tại</label>
+            <select id="new_namhoc" name="new_namhoc" class="form-control" required>
+              <option value="">-- Chọn năm học hiện tại --</option>
+              {% for nh in ds_namhoc %}
+                <option value="{{ nh }}" {% if selected_new_namhoc == nh %}selected{% endif %}>{{ nh }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group col-md-4">
+            <label>Khối hiện tại</label>
+            <select id="new_khoi" name="new_khoi" class="form-control">
+              <option value="">-- Chọn khối --</option>
+              {% for k in khoi_list %}
+                <option value="{{ k }}" {% if selected_new_khoi|stringformat:"s" == k|stringformat:"s" %}selected{% endif %}>Khối {{ k }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group col-md-4">
+            <label>Lớp hiện tại</label>
+            <select id="new_lop" name="new_lop" class="form-control" required>
+              <option value="">-- Chọn lớp --</option>
+              {% for lop in ds_lop %}
+                <option value="{{ lop.MaLOP }}" data-khoi="{{ lop.Khoi }}" data-namhoc="{{ lop.NamHOC }}">{{ lop.TenLOP }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Gán học sinh</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function locLopCu() {
+  const namhoc = document.getElementById("old_namhoc").value;
+  const khoi = document.getElementById("old_khoi").value;
+  const lop = document.getElementById("old_lop").value;
+  window.location.href = `?old_namhoc=${namhoc}&old_khoi=${khoi}&old_lop=${lop}`;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const old_khoi = document.getElementById("old_khoi");
+  const old_namhoc = document.getElementById("old_namhoc");
+  const old_lop = document.getElementById("old_lop");
+  const new_khoi = document.getElementById("new_khoi");
+  const new_namhoc = document.getElementById("new_namhoc");
+  const new_lop = document.getElementById("new_lop");
+
+  function filterSelectOptions(selectElement, khoi, namhoc) {
+    Array.from(selectElement.options).forEach(option => {
+      const dataKhoi = option.getAttribute("data-khoi");
+      const dataNamHoc = option.getAttribute("data-namhoc");
+      option.style.display = (!option.value || (dataKhoi === khoi && dataNamHoc === namhoc)) ? "block" : "none";
+    });
+  }
+
+  function autoFilterLop(selectKhoi, selectNamHoc, selectLop) {
+    filterSelectOptions(selectLop, selectKhoi.value, selectNamHoc.value);
+    const selectedOption = selectLop.options[selectLop.selectedIndex];
+    if (selectedOption && selectedOption.style.display === "none") {
+      selectLop.selectedIndex = 0;
+    }
+  }
+
+  old_khoi.addEventListener("change", () => autoFilterLop(old_khoi, old_namhoc, old_lop));
+  old_namhoc.addEventListener("change", () => autoFilterLop(old_khoi, old_namhoc, old_lop));
+
+  new_khoi.addEventListener("change", () => autoFilterLop(new_khoi, new_namhoc, new_lop));
+  new_namhoc.addEventListener("change", () => autoFilterLop(new_khoi, new_namhoc, new_lop));
+
+  autoFilterLop(old_khoi, old_namhoc, old_lop);
+  autoFilterLop(new_khoi, new_namhoc, new_lop);
+});
+
+document.getElementById("checkAll").addEventListener("change", function () {
+  const checkboxes = document.querySelectorAll("input[name='selected_students']");
+  checkboxes.forEach(chk => chk.checked = this.checked);
+});
+</script>
+{% endblock %}

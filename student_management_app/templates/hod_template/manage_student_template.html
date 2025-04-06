@@ -1,115 +1,139 @@
 {% extends 'hod_template/base_template.html' %}
-
-{% block page_title %}
-    Manage Student
-{% endblock page_title %}
-
-{% block main_content %}
-
 {% load static %}
 
-<section class="content">
-        <div class="container-fluid">
+{% block page_title %}Quản lý học sinh{% endblock %}
 
-            <a class="btn btn-primary" href="{% url 'add_student' %}" role="button">+ Add Student</a> <br/>&nbsp;
-            
-            {% if messages %}
-                                <div class="form-group">
-                                <div class="col-12">
-                                    {% for message in messages %}
-                                    {% if message.tags == "error" %}
-                                        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 10px;">
-                                        {{ message }}
-                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                        </div>
-                                    {% elif message.tags == "success" %}
-                                        <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-top: 10px;">
-                                        {{ message }}
-                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                        </div>
-                                    {% endif %}
-                                    {% endfor %}
-                                </div>
-                                </div>
-                                {% endif %}
+{% block main_content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <h4 class="mb-0"><i class="fas fa-users"></i> Danh sách học sinh</h4>
+      <a href="{% url 'add_student' %}" class="btn btn-danger"><i class="fas fa-plus"></i> Thêm học sinh</a>
+    </div>
 
-            <div class="row">
+    <div class="card-body">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        {% endfor %}
+      {% endif %}
 
-                <div class="col-md-12">
-                    <!-- general form elements -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Student Details</h3>
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <label for="namhoc">Năm học</label>
+          <select id="namhoc" class="form-control">
+            <option value="">-- Chọn năm học --</option>
+            {% for nh in ds_namhoc %}
+              <option value="{{ nh }}" {% if selected_namhoc == nh %}selected{% endif %}>{{ nh }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-                            <div class="card-tools">
-                            <div class="input-group input-group-sm" style="width: 150px;">
-                                <input type="text" name="table_search" class="form-control float-right" placeholder="Search">
+        <div class="col-md-3">
+          <label for="khoi">Khối</label>
+          <select id="khoi" class="form-control">
+            <option value="">-- Chọn khối --</option>
+            {% for k in khoi_list %}
+              <option value="{{ k }}" {% if selected_khoi|stringformat:"s" == k|stringformat:"s" %}selected{% endif %}>Khối {{ k }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-                                <div class="input-group-append">
-                                <button type="submit" class="btn btn-default"><i class="fas fa-search"></i></button>
-                                </div>
-                            </div>
-                            </div>
-                        </div>
-                        <!-- /.card-header -->
-                        <div class="card-body table-responsive p-0">
-                            <table class="table table-hover text-nowrap">
-                            <thead>
-                                <tr>
-                                <th>ID</th>
-                                <th>First Name</th>
-                                <th>Last Name</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Address</th>
-                                <th>Gender</th>
-                                <th>Profile Pic</th>
-                                <th>Start Year</th>
-                                <th>End Year</th>
-                                <th>Course</th>
-                                <th>Last Login</th>
-                                <th>Date Joined</th>
-                                <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for student in students %}
-                                <tr>
-                                <td>{{ student.admin.id }}</td>
-                                <td>{{ student.admin.first_name }}</td>
-                                <td>{{ student.admin.last_name }}</td>
-                                <td>{{ student.admin.username }}</td>
-                                <td>{{ student.admin.email }}</td>
-                                <td>{{ student.address }}</td>
-                                <td>{{ student.gender }}</td>
-                                <td> <img src="{{ student.profile_pic }}" style="width: 100px;" /> </td>
-                                <td>{{ student.session_year_id.session_start_year }}</td>
-                                <td>{{ student.session_year_id.session_end_year }}</td>
-                                <td>{{ student.course_id.course_name }}</td>
-                                <td>{{ student.admin.last_login }}</td>
-                                <td>{{ student.admin.date_joined }}</td>
-                                <td>
-                                    <a href="{% url 'edit_student' student.admin.id %}" class="btn btn-success">Edit</a> 
-                                    <a href="{% url 'delete_student' student.admin.id %}" class="btn btn-danger">Delete</a>
-                                </td>
-                                </tr>
-                                {% endfor %}
-                                
-                            </tbody>
-                            </table>
-                        </div>
-                        <!-- /.card-body -->
-                        </div>
-                    <!-- /.card -->
+        <div class="col-md-3">
+          <label for="lop">Lớp</label>
+          <select id="lop" class="form-control">
+            <option value="">-- Chọn lớp --</option>
+            {% for lop in ds_lop %}
+              <option value="{{ lop.MaLOP }}" data-khoi="{{ lop.Khoi }}" data-namhoc="{{ lop.NamHOC }}" {% if selected_lop == lop.MaLOP %}selected{% endif %}>{{ lop.TenLOP }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-                </div>
-            </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <button class="btn btn-success w-100" onclick="locHocSinh()"><i class="fas fa-filter"></i> Lọc</button>
+        </div>
+      </div>
 
-        </div><!-- /.container-fluid -->
-      </section>
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped text-center">
+          <thead class="thead-dark">
+            <tr>
+              <th>#</th>
+              <th>Mã HS</th>
+              <th>Họ tên</th>
+              <th>Ngày sinh</th>
+              <th>Giới tính</th>
+              <th>Email</th>
+              <th>SĐT</th>
+              <th>Lớp</th>
+              <th>Năm học</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for hs_lop in danh_sach %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ hs_lop.MaHS.MaHS }}</td>
+                <td>{{ hs_lop.MaHS.HoTen }}</td>
+                <td>{{ hs_lop.MaHS.NgaySinh|date:"d/m/Y" }}</td>
+                <td>{{ hs_lop.MaHS.GTinh }}</td>
+                <td>{{ hs_lop.MaHS.Email }}</td>
+                <td>{{ hs_lop.MaHS.SoDT }}</td>
+                <td>{{ hs_lop.MaLOP.TenLOP }}</td>
+                <td>{{ hs_lop.NamHOC }}</td>
+                <td>
+                  <a href="{% url 'edit_student' hs_lop.MaHS.MaHS %}" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i></a>
+                  <a href="{% url 'delete_student' hs_lop.MaHS.MaHS %}" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc muốn xóa không?')"><i class="fas fa-trash"></i></a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="10">Không có học sinh nào phù hợp.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
-  {% endblock main_content %}
+<script>
+function locHocSinh() {
+  const khoi = document.getElementById("khoi").value;
+  const lop = document.getElementById("lop").value;
+  const namhoc = document.getElementById("namhoc").value;
+  window.location.href = `?khoi=${khoi}&lop=${lop}&namhoc=${namhoc}`;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const khoiSelect = document.getElementById("khoi");
+  const namhocSelect = document.getElementById("namhoc");
+  const lopSelect = document.getElementById("lop");
+
+  function filterLopOptions() {
+    const selectedKhoi = khoiSelect.value;
+    const selectedNamHoc = namhocSelect.value;
+
+    Array.from(lopSelect.options).forEach(option => {
+      const khoi = option.getAttribute("data-khoi");
+      const namhoc = option.getAttribute("data-namhoc");
+      option.style.display = (!option.value || (khoi === selectedKhoi && namhoc === selectedNamHoc)) ? "block" : "none";
+    });
+
+    const selectedOption = lopSelect.options[lopSelect.selectedIndex];
+    if (selectedOption && selectedOption.style.display === "none") {
+      lopSelect.selectedIndex = 0;
+    }
+  }
+
+  khoiSelect.addEventListener("change", filterLopOptions);
+  namhocSelect.addEventListener("change", filterLopOptions);
+  filterLopOptions();
+});
+</script>
+{% endblock %}

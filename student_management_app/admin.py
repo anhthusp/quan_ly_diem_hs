@@ -1,24 +1,48 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, AdminHOD, Staffs, Courses, Subjects, Students, Attendance, AttendanceReport, LeaveReportStudent, LeaveReportStaff, FeedBackStudent, FeedBackStaffs, NotificationStudent, NotificationStaffs
+from .models import GiaoVien, HocSinh, PhuHuynh, LopHoc, MonHoc, MonHocLop, HocSinhLop, KetQua, HocBa, YKien, YKienGV
 
-# Register your models here.
-class UserModel(UserAdmin):
-    pass
+@admin.register(GiaoVien)
+class GiaoVienAdmin(admin.ModelAdmin):
+    list_display = ['MaGV', 'HoTen', 'VAI_TRO']
+    search_fields = ['MaGV', 'HoTen', 'VAI_TRO']
 
+@admin.register(HocSinh)
+class HocSinhAdmin(admin.ModelAdmin):
+    list_display = ['MaHS', 'HoTen', 'GTinh', 'NgaySinh', 'Email']
+    search_fields = ['MaHS', 'HoTen', 'Email']
 
-admin.site.register(CustomUser, UserModel)
+@admin.register(PhuHuynh)
+class PhuHuynhAdmin(admin.ModelAdmin):
+    list_display = ['MaPH', 'HoTen', 'Email', 'SoDT']
 
-admin.site.register(AdminHOD)
-admin.site.register(Staffs)
-admin.site.register(Courses)
-admin.site.register(Subjects)
-admin.site.register(Students)
-admin.site.register(Attendance)
-admin.site.register(AttendanceReport)
-admin.site.register(LeaveReportStudent)
-admin.site.register(LeaveReportStaff)
-admin.site.register(FeedBackStudent)
-admin.site.register(FeedBackStaffs)
-admin.site.register(NotificationStudent)
-admin.site.register(NotificationStaffs)
+@admin.register(LopHoc)
+class LopHocAdmin(admin.ModelAdmin):
+    list_display = ['MaLOP', 'TenLOP', 'NamHOC', 'Khoi', 'GVCN']  # Thêm 'GVCN'
+    
+@admin.register(MonHoc)
+class MonHocAdmin(admin.ModelAdmin):
+    list_display = ['MaMH', 'TenMH', 'SoTiet', 'KieuDG']
+
+@admin.register(MonHocLop)
+class MonHocLopAdmin(admin.ModelAdmin):
+    list_display = ['MaMHL', 'MaMH', 'MaLOP', 'MaGV', 'NamHOC']  # Đã có 'MaGV'
+
+@admin.register(HocSinhLop)
+class HocSinhLopAdmin(admin.ModelAdmin):
+    list_display = ['HSID', 'MaHS', 'MaLOP', 'NamHOC']
+
+@admin.register(KetQua)
+class KetQuaAdmin(admin.ModelAdmin):
+    list_display = ['kqid', 'hsid', 'ma_mhl', 'nam_hoc']
+
+@admin.register(HocBa)
+class HocBaAdmin(admin.ModelAdmin):
+    list_display = ['HBID', 'HSID', 'NamHOC', 'XepLoaiHK1_HL', 'XepLoaiHK2_HL']
+
+@admin.register(YKien)
+class YKienAdmin(admin.ModelAdmin):
+    list_display = ['YKID', 'MaHS', 'MaPH', 'ThoiGianGui', 'TrangThai']
+
+@admin.register(YKienGV)
+class YKienGVAdmin(admin.ModelAdmin):
+    list_display = ['YKID', 'MaGV']

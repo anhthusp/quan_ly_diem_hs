@@ -1,36 +1,71 @@
 {% extends 'hod_template/base_template.html' %}
-
-{% block page_title %}
-    Edit Student | Username: {{ username }} | #ID : {{ id }}
-{% endblock page_title %}
-
-{% block main_content %}
-
 {% load static %}
 
-<section class="content">
-        <div class="container-fluid">
+{% block page_title %}
+Chỉnh sửa thông tin học sinh
+{% endblock %}
 
-            <div class="row">
-                <div class="col-md-12">
-                    <!-- general form elements -->
-                    <div class="card card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title">Edit Student</h3>
-                    </div>
-                    <!-- /.card-header -->
-                    <!-- form start -->
-                    {% comment %} Displaying the Django Form using forms.py EditStudentForm {% endcomment %}
-                    {% url 'edit_student_save' as action_path %}
-                    {% include 'hod_template/form_template.html' with messages=messages form=form action_path=action_path button_text="Update Student" %}
+{% block main_content %}
+<div class="container mt-4">
+  <div class="card border-primary">
+    <div class="card-header bg-primary text-white">
+      <h4 class="card-title mb-0">Chỉnh sửa học sinh - {{ hoc_sinh.HoTen }} ({{ hoc_sinh.MaHS }})</h4>
+    </div>
 
-                    </div>
-                    <!-- /.card -->
-
-                </div>
+    <form method="POST">
+      {% csrf_token %}
+      <div class="card-body">
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
+          {% endfor %}
+        {% endif %}
 
-        </div><!-- /.container-fluid -->
-      </section>
+        <div class="form-group">
+          <label for="HoTen">Họ tên</label>
+          <input type="text" class="form-control" name="HoTen" id="HoTen" value="{{ hoc_sinh.HoTen }}" required>
+        </div>
 
-  {% endblock main_content %}
+        <div class="form-group">
+          <label for="Email">Email</label>
+          <input type="email" class="form-control" name="Email" id="Email" value="{{ hoc_sinh.Email }}">
+        </div>
+
+        <div class="form-group">
+          <label for="SoDT">Số điện thoại</label>
+          <input type="text" class="form-control" name="SoDT" id="SoDT" value="{{ hoc_sinh.SoDT }}">
+        </div>
+
+        <div class="form-group">
+          <label for="NgaySinh">Ngày sinh</label>
+          <input type="date" class="form-control" name="NgaySinh" id="NgaySinh" value="{{ hoc_sinh.NgaySinh|date:'Y-m-d' }}">
+        </div>
+
+        <div class="form-group">
+          <label for="GTinh">Giới tính</label>
+          <select name="GTinh" id="GTinh" class="form-control">
+            <option value="Nam" {% if hoc_sinh.GTinh == 'Nam' %}selected{% endif %}>Nam</option>
+            <option value="Nữ" {% if hoc_sinh.GTinh == 'Nữ' %}selected{% endif %}>Nữ</option>
+            <option value="Khác" {% if hoc_sinh.GTinh == 'Khác' %}selected{% endif %}>Khác</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mật khẩu mới (bỏ trống nếu không thay đổi)</label>
+          <input type="password" class="form-control" name="password" id="password" placeholder="Nhập mật khẩu mới">
+        </div>
+      </div>
+
+      <div class="card-footer text-right">
+        <button type="submit" class="btn btn-success">Lưu thay đổi</button>
+        <a href="{% url 'manage_student' %}" class="btn btn-secondary">Quay lại</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

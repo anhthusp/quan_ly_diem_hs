@@ -1,0 +1,52 @@
+{% extends 'hod_template/base_template.html' %}
+{% load static %}
+
+{% block page_title %}Quản lý môn học{% endblock %}
+
+{% block main_content %}
+<div class="container mt-4">
+    {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+  <h3 class="mb-3">Danh sách môn học</h3>
+
+  <a href="{% url 'add_subject' %}" class="btn btn-success mb-3">
+    <i class="fas fa-plus-circle"></i> Thêm môn học
+  </a>
+
+  <table class="table table-bordered text-center">
+    <thead class="thead-dark">
+      <tr>
+        <th>Mã môn</th>
+        <th>Tên môn</th>
+        <th>Số tiết</th>
+        <th>Kiểu đánh giá</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for mon in ds_monhoc %}
+        <tr>
+          <td>{{ mon.MaMH }}</td>
+          <td>{{ mon.TenMH }}</td>
+          <td>{{ mon.SoTiet }}</td>
+          <td>{{ mon.KieuDG }}</td>
+          <td>
+            <a href="{% url 'edit_subject' mon.MaMH %}" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i></a>
+            <a href="{% url 'delete_subject' mon.MaMH %}" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa?')"><i class="fas fa-trash-alt"></i></a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">Chưa có môn học nào.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

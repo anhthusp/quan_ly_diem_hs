@@ -64,6 +64,17 @@ urlpatterns = [
 
 
 
+    path('score-management/view/', HodViews.scores_by_class, name='scores_by_class'),
+    path('score-management/permission/', HodViews.toggle_input_permission, name='toggle_input_permission'),
+    path('assign-subject-to-class/', HodViews.assign_subject_to_class, name='assign_subject_to_class'),
+    path('view_subjects_by_class/', HodViews.view_subjects_by_class, name='view_subjects_by_class'),
+    path('teacher-assignment-report/', HodViews.teacher_assignment_report, name="teacher_assignment_report"),
+
+
+
+
+
+
 ]
 
 

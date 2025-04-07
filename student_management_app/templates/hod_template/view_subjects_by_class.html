@@ -1,0 +1,61 @@
+{% extends 'hod_template/base_template.html' %}
+{% block page_title %}Xem Môn Học Của Lớp{% endblock %}
+
+{% block main_content %}
+<div class="container mt-3">
+  <div class="card">
+    <div class="card-header bg-secondary text-white">
+      <h5><i class="fas fa-eye"></i> Xem môn học của lớp</h5>
+    </div>
+    <div class="card-body">
+      <form method="get" class="form-inline mb-3">
+        <select name="namhoc" class="form-control mr-2" onchange="this.form.submit()">
+          <option value="">-- Chọn năm học --</option>
+          {% for y in years %}
+            <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+
+        <select name="khoi" class="form-control mr-2" onchange="this.form.submit()">
+          <option value="">-- Chọn khối --</option>
+          {% for k in khois %}
+            <option value="{{ k }}" {% if k|stringformat:"s" == selected_khoi %}selected{% endif %}>Khối {{ k }}</option>
+          {% endfor %}
+        </select>
+
+        <select name="lop" class="form-control mr-2">
+          <option value="">-- Chọn lớp --</option>
+          {% for c in classes %}
+            <option value="{{ c.MaLOP }}" {% if c.MaLOP == selected_class %}selected{% endif %}>{{ c.TenLOP }}</option>
+          {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-primary">Xem</button>
+      </form>
+
+      {% if selected_class and assigned_subjects %}
+      <table class="table table-bordered table-striped mt-4">
+        <thead class="thead-dark">
+          <tr>
+            <th>#</th>
+            <th>Môn học</th>
+            <th>Giáo viên giảng dạy</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in assigned_subjects %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ item.MaMH.TenMH }}</td>
+            <td>{{ item.MaGV.HoTen }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% elif selected_class %}
+        <div class="alert alert-warning mt-3">⚠️ Lớp này chưa được gán môn học nào.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

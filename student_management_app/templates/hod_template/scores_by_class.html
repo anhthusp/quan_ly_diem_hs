@@ -1,0 +1,111 @@
+{% extends 'hod_template/base_template.html' %}
+
+{% block page_title %}
+Xem điểm và nhận xét theo lớp
+{% endblock %}
+
+{% block main_content %}
+<div class="container my-3">
+<div class="card shadow-sm">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0"><i class="fas fa-chart-line mr-2"></i>Xem điểm và nhận xét theo lớp</h5>
+  </div>
+  <div class="card-body">
+    <form method="get" class="row">
+
+      <div class="form-group col-md-2">
+        <label for="namhoc">Năm học:</label>
+        <select name="namhoc" id="namhoc" class="form-control" onchange="this.form.submit()">
+          <option value="">-- Chọn --</option>
+          {% for nam in nams %}
+            <option value="{{ nam }}" {% if nam == namhoc_selected %}selected{% endif %}>{{ nam }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group col-md-2">
+        <label for="khoi">Khối:</label>
+        <select name="khoi" id="khoi" class="form-control" onchange="this.form.submit()">
+          <option value="">-- Chọn --</option>
+          {% for khoi in khois %}
+            <option value="{{ khoi }}" {% if khoi|stringformat:"s" == khoi_selected %}selected{% endif %}>Khối {{ khoi }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group col-md-2">
+        <label for="lop">Lớp:</label>
+        <select name="lop" id="lop" class="form-control">
+          <option value="">-- Chọn --</option>
+          {% for lop in lops %}
+            <option value="{{ lop.MaLOP }}" {% if lop.MaLOP == lop_selected %}selected{% endif %}>{{ lop.TenLOP }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group col-md-3">
+        <label for="mon">Môn học:</label>
+        <select name="mon" id="mon" class="form-control">
+          <option value="">-- Chọn môn --</option>
+          {% for mon in mons %}
+            <option value="{{ mon.MaMH }}" {% if mon.MaMH == mon_selected %}selected{% endif %}>{{ mon.TenMH }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group col-md-2">
+        <label for="hk">Học kỳ:</label>
+        <select name="hk" id="hk" class="form-control">
+          <option value="hk1" {% if hk_selected == 'hk1' %}selected{% endif %}>Học kỳ 1</option>
+          <option value="hk2" {% if hk_selected == 'hk2' %}selected{% endif %}>Học kỳ 2</option>
+        </select>
+      </div>
+
+      <div class="form-group col-md-1 d-flex align-items-end">
+        <button type="submit" class="btn btn-success w-100">Xem</button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+{% if ketquas %}
+<div class="card mt-4">
+  <div class="card-body table-responsive p-0">
+    <table class="table table-bordered table-hover text-center">
+      <thead class="thead-dark">
+        <tr>
+          <th>Học sinh</th>
+          <th>TX1</th><th>TX2</th><th>TX3</th><th>TX4</th><th>TX5</th>
+          <th>GK</th><th>CK</th>
+          <th>NX1</th><th>NX2</th><th>NXGK</th><th>NXCK</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for kq in ketquas %}
+        <tr>
+          <td>{{ kq.hsid.MaHS.HoTen }}</td>
+          {% if hk_selected == 'hk1' %}
+            <td>{{ kq.hk1_tx1 }}</td><td>{{ kq.hk1_tx2 }}</td><td>{{ kq.hk1_tx3 }}</td>
+            <td>{{ kq.hk1_tx4 }}</td><td>{{ kq.hk1_tx5 }}</td>
+            <td>{{ kq.hk1_gk }}</td><td>{{ kq.hk1_ck }}</td>
+            <td>{{ kq.hk1_nx1 }}</td><td>{{ kq.hk1_nx2 }}</td><td>{{ kq.hk1_nxgk }}</td><td>{{ kq.hk1_nxck }}</td>
+          {% else %}
+            <td>{{ kq.hk2_tx1 }}</td><td>{{ kq.hk2_tx2 }}</td><td>{{ kq.hk2_tx3 }}</td>
+            <td>{{ kq.hk2_tx4 }}</td><td>{{ kq.hk2_tx5 }}</td>
+            <td>{{ kq.hk2_gk }}</td><td>{{ kq.hk2_ck }}</td>
+            <td>{{ kq.hk2_nx1 }}</td><td>{{ kq.hk2_nx2 }}</td><td>{{ kq.hk2_nxgk }}</td><td>{{ kq.hk2_nxck }}</td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% elif lop_selected and mon_selected and hk_selected and namhoc_selected %}
+<div class="alert alert-warning mt-3">
+  Không có dữ liệu điểm cho lựa chọn này.
+</div>
+{% endif %}
+</div>
+{% endblock %}

@@ -104,6 +104,7 @@ class MonHocLop(models.Model):
     MaMH = models.ForeignKey(MonHoc, on_delete=models.CASCADE)
     MaLOP = models.ForeignKey(LopHoc, on_delete=models.CASCADE)
     MaGV = models.ForeignKey(GiaoVien, on_delete=models.CASCADE)
+    ChoPhepNhapDiem = models.BooleanField(default=True)
 
     class Meta:
         db_table = "MONHOC_LOP"
@@ -116,18 +117,33 @@ class KetQua(models.Model):
     ma_mhl = models.ForeignKey(MonHocLop, on_delete=models.CASCADE)
     nam_hoc = models.CharField(max_length=10)
 
+    # HK1
     hk1_tx1 = models.FloatField(null=True, blank=True)
     hk1_tx2 = models.FloatField(null=True, blank=True)
     hk1_tx3 = models.FloatField(null=True, blank=True)
     hk1_tx4 = models.FloatField(null=True, blank=True)
+    hk1_tx5 = models.FloatField(null=True, blank=True)
     hk1_gk = models.FloatField(null=True, blank=True)
     hk1_ck = models.FloatField(null=True, blank=True)
+
+    hk1_nx1 = models.CharField(max_length=15, null=True, blank=True)
+    hk1_nx2 = models.CharField(max_length=15, null=True, blank=True)
+    hk1_nxgk = models.CharField(max_length=15, null=True, blank=True)
+    hk1_nxck = models.CharField(max_length=15, null=True, blank=True)
+
+    # HK2
     hk2_tx1 = models.FloatField(null=True, blank=True)
     hk2_tx2 = models.FloatField(null=True, blank=True)
     hk2_tx3 = models.FloatField(null=True, blank=True)
     hk2_tx4 = models.FloatField(null=True, blank=True)
+    hk2_tx5 = models.FloatField(null=True, blank=True)
     hk2_gk = models.FloatField(null=True, blank=True)
     hk2_ck = models.FloatField(null=True, blank=True)
+
+    hk2_nx1 = models.CharField(max_length=15, null=True, blank=True)
+    hk2_nx2 = models.CharField(max_length=15, null=True, blank=True)
+    hk2_nxgk = models.CharField(max_length=15, null=True, blank=True)
+    hk2_nxck = models.CharField(max_length=15, null=True, blank=True)
 
     class Meta:
         db_table = "KETQUA"

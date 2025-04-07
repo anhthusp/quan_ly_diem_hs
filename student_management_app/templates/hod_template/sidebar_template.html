@@ -4,7 +4,7 @@
   <!-- Logo -->
   <a href="{% url 'admin_home' %}" class="brand-link">
     <img src="{% static 'dist/img/AdminLTELogo.png' %}" alt="Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
-    <span class="brand-text font-weight-light">QUẢN LÝ ĐIỂM HS THPT</span>
+    <span class="brand-text font-weight-light">HỆ THỐNG QUẢN LÝ ĐIỂM</span>
   </a>
 
   <!-- Sidebar -->
@@ -24,14 +24,14 @@
 
         {% url 'manage_teacher' as manage_teacher_url %}
         {% url 'add_teacher' as add_teacher_url %}
-        
+        {% url 'teacher_assignment_report' as report_url %}
         <li class="nav-item has-treeview
-          {% if request.path == manage_teacher_url or request.path == add_teacher_url %}
+          {% if request.path == manage_teacher_url or request.path == add_teacher_url or request.path == report_url %}
             menu-open
           {% endif %}">
           
           <a href="#" class="nav-link
-            {% if request.path == manage_teacher_url or request.path == add_teacher_url %}
+            {% if request.path == manage_teacher_url or request.path == add_teacher_url or request.path == report_url %}
               bg-primary text-white
             {% endif %}">
             <i class="nav-icon fas fa-chalkboard-teacher"></i>
@@ -52,6 +52,13 @@
               <a href="{{ add_teacher_url }}" class="nav-link {% if request.path == add_teacher_url %}active{% endif %}">
                 <i class="far fa-circle nav-icon"></i>
                 <p>Thêm giáo viên</p>
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a href="{{ report_url }}" class="nav-link {% if request.path == report_url %}active{% endif %}">
+                <i class="far fa-circle nav-icon"></i>
+                <p>📋 Thống kê GV theo lớp</p>
               </a>
             </li>
           </ul>
@@ -100,16 +107,14 @@
     </li>
   </ul>
 </li>
-
-
   <!-- Quản lý phụ huynh -->
         <li class="nav-item has-treeview {% if request.path|slice:"0:20" == '/manage_parent' %} menu-open {% endif %}">
           <a href="#" class="nav-link {% if request.path|slice:"0:20" == '/manage_parent' %} bg-primary text-white {% endif %}">
             <i class="nav-icon fas fa-users"></i>
-            <p>
+            <span>
               Quản lý phụ huynh
               <i class="right fas fa-angle-left"></i>
-            </p>
+            </span>
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
@@ -125,14 +130,17 @@
 <!-- Quản lý lớp học -->
 {% url 'manage_class' as manage_class_url %}
 {% url 'add_class' as add_class_url %}
+{% url 'assign_subject_to_class' as assign_subject_to_class_url %}
+{% url 'view_subjects_by_class' as view_subjects_by_class_url %}
+
 
 <li class="nav-item has-treeview
-  {% if request.path == manage_class_url or request.path == add_class_url %}
+  {% if request.path == manage_class_url or request.path == add_class_url or request.path == assign_subject_to_class_url or request.path == view_subjects_by_class_url %}
     menu-open
   {% endif %}">
   
   <a href="#" class="nav-link
-    {% if request.path == manage_class_url or request.path == add_class_url %}
+    {% if request.path == manage_class_url or request.path == add_class_url or request.path == assign_subject_to_class_url or request.path == view_subjects_by_class_url %}
       bg-primary text-white
     {% endif %}">
     <i class="nav-icon fas fa-school"></i>
@@ -155,24 +163,27 @@
         <p>Thêm lớp học</p>
       </a>
     </li>
+    <li class="nav-item">
+      <a href="{{assign_subject_to_class_url}}" class="nav-link {% if request.path == assign_subject_to_class_url %}active{% endif %}">
+        <i class="far fa-circle nav-icon"></i>
+        <p>Gán môn học vào lớp</p>
+      </a>
+    </li>
+
+    <li class="nav-item">
+      <a href="{{ view_subjects_by_class_url }}" class="nav-link {% if request.path == view_subjects_by_class_url %}active{% endif %}">
+        <i class="far fa-circle nav-icon"></i>
+        <p>Môn học của lớp</p>
+      </a>
+    </li>
   </ul>
 </li>
-
-
-        <!-- Hồ sơ admin -->
-        <li class="nav-item">
-          {% url 'admin_profile' as admin_profile %}
-          <a href="{{ admin_profile }}" class="nav-link {% if request.path == admin_profile %} bg-primary text-white {% endif %}">
-            <i class="nav-icon fas fa-user-cog"></i>
-            <p>Hồ sơ quản trị</p>
-          </a>
-        </li>
         {% url 'assign_teacher_to_class' as assign_teacher_url %}
         {% url 'add_subject' as add_subject_url %}
         {% url 'manage_subjects' as manage_subjects_url %}
-        
+
         <li class="nav-item has-treeview 
-          {% if request.path == assign_teacher_url or request.path == add_subject_url %}
+          {% if request.path == assign_teacher_url or request.path == add_subject_url or request.path == manage_subjects_url %}
             menu-open
           {% endif %}">
           <a href="#" class="nav-link 
@@ -205,10 +216,51 @@
                 <p>Thêm môn học</p>
               </a>
             </li>
+
           </ul>
         </li>
         
-
+        {% comment %} Quản lý điểm {% endcomment %}
+        {% url 'scores_by_class' as scores_by_class_url %}
+        {% url 'toggle_input_permission' as toggle_input_permission_url %}
+        <li class="nav-item has-treeview 
+        {% if request.path == scores_by_class_url or request.path == toggle_input_permission_url %}
+          menu-open
+        {% endif %}">
+        <a href="#" class="nav-link 
+          {% if request.path == scores_by_class_url or request.path == toggle_input_permission_url %}
+            bg-primary text-white
+          {% endif %}">
+          <i class="nav-icon fas fa-chart-line"></i>
+          <p>
+            Quản lý điểm
+            <i class="right fas fa-angle-left"></i>
+          </p>
+        </a>
+        <ul class="nav nav-treeview">
+          <li class="nav-item">
+            <a href="{{ scores_by_class_url }}" class="nav-link {% if request.path == scores_by_class_url %}active{% endif %}">
+              <i class="far fa-circle nav-icon"></i>
+              <p>Xem điểm theo lớp</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{{ toggle_input_permission_url }}" class="nav-link {% if request.path == toggle_input_permission_url %}active{% endif %}">
+              <i class="far fa-circle nav-icon"></i>
+              <p>Mở/Đóng nhập điểm</p>
+            </a>
+          </li>
+        </ul>
+      </li>
+      
+                  <!-- Hồ sơ admin -->
+                  <li class="nav-item">
+                    {% url 'admin_profile' as admin_profile %}
+                    <a href="{{ admin_profile }}" class="nav-link {% if request.path == admin_profile %} bg-primary text-white {% endif %}">
+                      <i class="nav-icon fas fa-user-cog"></i>
+                      <p>Hồ sơ quản trị</p>
+                    </a>
+                  </li>
       </ul>
     </nav>
   </div>

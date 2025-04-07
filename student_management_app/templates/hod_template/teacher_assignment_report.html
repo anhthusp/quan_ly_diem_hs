@@ -1,0 +1,63 @@
+{% extends 'hod_template/base_template.html' %}
+{% block page_title %}📋 Thống kê giáo viên giảng dạy theo lớp{% endblock %}
+
+{% block main_content %}
+<div class="container my-4">
+  <div class="card shadow">
+    <div class="card-header bg-success text-white">
+      <h5><i class="fas fa-chalkboard-teacher"></i> Thống kê giáo viên giảng dạy theo lớp</h5>
+    </div>
+    <div class="card-body">
+      <form method="get" class="form-inline mb-4">
+        <select name="namhoc" class="form-control mr-3" onchange="this.form.submit()">
+          <option value="">-- Chọn năm học --</option>
+          {% for y in years %}
+            <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+
+        <select name="khoi" class="form-control mr-3" onchange="this.form.submit()">
+          <option value="">-- Chọn khối --</option>
+          {% for k in khois %}
+            <option value="{{ k }}" {% if k|stringformat:"s" == selected_khoi %}selected{% endif %}>Khối {{ k }}</option>
+          {% endfor %}
+        </select>
+
+        <select name="lop" class="form-control mr-3" onchange="this.form.submit()">
+          <option value="">-- Chọn lớp --</option>
+          {% for lop in classes %}
+            <option value="{{ lop.MaLOP }}" {% if lop.MaLOP == selected_class %}selected{% endif %}>{{ lop.TenLOP }}</option>
+          {% endfor %}
+        </select>
+
+        {% comment %} <button type="submit" class="btn btn-primary">Xem thông tin</button> {% endcomment %}
+      </form>
+
+      {% if assignments %}
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover text-center">
+          <thead class="thead-dark">
+            <tr>
+              <th>#</th>
+              <th>Môn Học</th>
+              <th>Giáo Viên Giảng Dạy</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in assignments %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ a.MaMH.TenMH }}</td>
+                <td>{{ a.MaGV.HoTen }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% elif selected_class %}
+        <div class="alert alert-warning">Chưa có môn học nào được gán cho lớp này trong năm học {{ selected_year }}.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends 'hod_template/base_template.html' %}
+{% block page_title %}Mở/Đóng Quyền Nhập Điểm{% endblock %}
+
+{% block main_content %}
+<div class="container my-3">
+  <div class="card shadow mb-4">
+    <div class="card-header py-3 bg-primary text-white">
+      <h4 class="m-0 font-weight-bold">
+        <i class="fas fa-toggle-on mr-2"></i> Mở/Đóng quyền nhập điểm theo lớp
+      </h4>
+    </div>
+    <div class="card-body">
+      <form method="get" class="form-row align-items-end mb-3">
+        <div class="form-group col-md-3">
+          <label class="font-weight-bold">Năm học:</label>
+          <select name="namhoc" class="form-control" onchange="this.form.submit()">
+            <option value="">-- Chọn năm học --</option>
+            {% for year in all_years %}
+              <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group col-md-2">
+          <label class="font-weight-bold">Khối:</label>
+          <select name="khoi" class="form-control" onchange="this.form.submit()">
+            <option value="">-- Chọn khối --</option>
+            {% for k in khois %}
+              <option value="{{ k }}" {% if k|stringformat:"s" == selected_khoi %}selected{% endif %}>Khối {{ k }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group col-md-3">
+          <label class="font-weight-bold">Lớp:</label>
+          <select name="lop" class="form-control">
+            <option value="">-- Chọn lớp --</option>
+            {% for l in lops %}
+              <option value="{{ l.MaLOP }}" {% if l.MaLOP == selected_lop %}selected{% endif %}>{{ l.TenLOP }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group col-md-2">
+          <button type="submit" class="btn btn-success btn-block">
+            <i class="fas fa-filter mr-1"></i> Xem
+          </button>
+        </div>
+      </form>
+
+      {% if monhoclop_list %}
+      <form method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover text-center">
+            <thead class="thead-dark">
+              <tr>
+                <th>#</th>
+                <th>Môn học</th>
+                <th>Giáo viên</th>
+                <th>Cho phép nhập điểm</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for mhl in monhoclop_list %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ mhl.MaMH.TenMH }}</td>
+                <td>{{ mhl.MaGV.HoTen }}</td>
+                <td>
+                  <input type="checkbox" name="permission" value="{{ mhl.MaMHL }}" {% if mhl.ChoPhepNhapDiem %}checked{% endif %}>
+                  <input type="hidden" name="all_ids" value="{{ mhl.MaMHL }}">
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">
+          <i class="fas fa-save mr-1"></i> Lưu thay đổi
+        </button>
+      </form>
+      {% elif selected_lop %}
+        <div class="alert alert-warning mt-4">⚠️ Không tìm thấy môn học trong lớp này.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

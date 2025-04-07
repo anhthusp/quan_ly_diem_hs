@@ -1,0 +1,95 @@
+{% extends 'hod_template/base_template.html' %}
+{% block page_title %}Gán Môn Học Cho Lớp{% endblock %}
+
+{% block main_content %}
+<div class="container my-3">
+  <div class="card shadow">
+    <div class="card-header bg-info text-white">
+      <h5><i class="fas fa-link"></i> Gán môn học vào lớp</h5>
+    </div>
+    <div class="card-body">
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="get" class="form-inline mb-3">
+        <select name="namhoc" class="form-control mr-2" onchange="this.form.submit()">
+          <option value="">-- Chọn năm học --</option>
+          {% for y in years %}
+            <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+
+        <select name="khoi" class="form-control mr-2" onchange="this.form.submit()">
+          <option value="">-- Chọn khối --</option>
+          {% for k in khois %}
+            <option value="{{ k }}" {% if k|stringformat:"s" == selected_khoi %}selected{% endif %}>Khối {{ k }}</option>
+          {% endfor %}
+        </select>
+
+        <select name="lop" class="form-control mr-2" onchange="this.form.submit()">
+          <option value="">-- Chọn lớp --</option>
+          {% for c in classes %}
+            <option value="{{ c.MaLOP }}" {% if c.MaLOP == selected_class %}selected{% endif %}>{{ c.TenLOP }}</option>
+          {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-primary">Chọn</button>
+      </form>
+
+      {% if selected_class and monhocs %}
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="namhoc" value="{{ selected_year }}">
+        <input type="hidden" name="lop" value="{{ selected_class }}">
+
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover text-center">
+            <thead class="thead-dark">
+              <tr>
+                <th>#</th>
+                <th>Môn học</th>
+                <th>Chọn</th>
+                <th>Giáo viên phụ trách</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in monhocs %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ m.TenMH }}</td>
+                <td>
+                  <input type="checkbox" name="mon_id_{{ forloop.counter }}" value="{{ m.MaMH }}">
+                </td>
+                <td>
+                  <select name="gv_id_{{ forloop.counter }}" class="form-control">
+                    <option value="">-- Chọn giáo viên --</option>
+                    {% for gv in m.ds_gv %}
+                      <option value="{{ gv.MaGV }}">{{ gv.HoTen }}</option>
+                    {% endfor %}
+                  </select>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <input type="hidden" name="total" value="{{ monhocs|length }}">
+        <button type="submit" class="btn btn-success mt-3">
+          <i class="fas fa-check-circle mr-1"></i> Gán môn học
+        </button>
+      </form>
+      {% elif selected_class %}
+        <div class="alert alert-warning">
+          ⚠️ Không có môn học phù hợp với khối {{ selected_khoi }} để gán vào lớp.
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

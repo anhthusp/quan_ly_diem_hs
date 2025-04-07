@@ -1,0 +1,45 @@
+{% extends 'teacher_template/base_template.html' %} {% block main_content %} {%
+load static %}
+
+<section class="content">
+  <div class="container-fluid">
+    <!-- Thống kê tổng quan của giáo viên -->
+    <div class="row">
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+          <div class="inner">
+            <h3>{{ so_lop_dang_day }}</h3>
+            <p>Lớp đang dạy</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-users-class"></i>
+          </div>
+          <a href="{% url 'teacher_class_list' %}" class="small-box-footer"
+            >Xem danh sách <i class="fas fa-arrow-circle-right"></i
+          ></a>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+          <div class="inner">
+            <h3>{{ so_mon_dang_day }}</h3>
+            <p>Môn đang dạy</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-book-reader"></i>
+          </div>
+          <a href="{% url 'teacher_subject_list' %}" class="small-box-footer"
+            >Xem chi tiết <i class="fas fa-arrow-circle-right"></i
+          ></a>
+        </div>
+      </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock main_content %} {% block custom_js %}
+<!-- JS cho biểu đồ hoặc thống kê sau này -->
+{% endblock custom_js %}

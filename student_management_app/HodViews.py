@@ -10,8 +10,9 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from django.utils.http import urlencode
+from django.db.models import Q
 
-# Trang chủ admin
+# Trang chủ: home_content.html
 @login_required(login_url='login')
 def admin_home(request):
     hoc_sinh_count = HocSinh.objects.count()
@@ -27,6 +28,7 @@ def admin_home(request):
     }
     return render(request, "hod_template/home_content.html", context)
 
+#Trang thêm học sinh vào lớp: assign_student_template.html
 @login_required(login_url='login')
 def assign_student_to_class(request):
     old_namhoc = request.GET.get("old_namhoc")
@@ -87,6 +89,7 @@ def assign_student_to_class(request):
         "danh_sach": danh_sach
     })
 
+#Trang thêm học sinh vào hệ thống: add_student_template.html
 @login_required(login_url='login')
 def add_student(request):
     ds_namhoc = LopHoc.objects.values_list("NamHOC", flat=True).distinct()
@@ -140,6 +143,7 @@ def add_student(request):
         "ds_lop": ds_lop,
     })
 
+#Trang quản lý học sinh + hiển thị toàn bộ học sinh trong lớp: manage_student_template.html
 @login_required(login_url='login')
 def manage_student(request):
     selected_khoi = request.GET.get("khoi")
@@ -178,6 +182,7 @@ def manage_student(request):
     }
     return render(request, "hod_template/manage_student_template.html", context)
 
+#Trang chỉnh sửa, cập nhật thông tin học sinh: edit_student_template.html
 @login_required(login_url='login')
 def edit_student(request, mahs):
     hoc_sinh = get_object_or_404(HocSinh, MaHS=mahs)
@@ -213,6 +218,7 @@ def edit_student(request, mahs):
 
     return render(request, "hod_template/edit_student_template.html", {"hoc_sinh": hoc_sinh})
 
+#Xóa học sinh: 
 @login_required(login_url='login')
 def delete_student(request, student_id):
     hoc_sinh = get_object_or_404(HocSinh, MaHS=student_id)
@@ -225,7 +231,7 @@ def delete_student(request, student_id):
         messages.error(request, f"Xóa học sinh thất bại: {e}")
     return redirect('manage_student')
 
-# ==== QL Lớp Học ====#
+#Trang hiển thị các lớp học qua các năm: manage_class_template.html
 @login_required(login_url='login')
 def manage_class(request):
     selected_namhoc = request.GET.get("namhoc", "")
@@ -251,6 +257,7 @@ def manage_class(request):
     }
     return render(request, "hod_template/manage_class_template.html", context)
 
+#Trang thêm lớp học: add_class_template.html
 @login_required(login_url='login')
 def add_class(request):
     ds_namhoc = LopHoc.objects.values_list("NamHOC", flat=True).distinct()
@@ -284,6 +291,7 @@ def add_class(request):
         "gv_list": gv_list,
     })
 
+#Trang chỉnh sửa thông tin lớp học (năm học, GVCN, Lớp): edit_class_template.html
 @login_required(login_url='login')
 def edit_class(request, malop):
     lop = get_object_or_404(LopHoc, MaLOP=malop)
@@ -307,17 +315,19 @@ def edit_class(request, malop):
     gv_list = GiaoVien.objects.all()
     return render(request, "hod_template/edit_class_template.html", {"lop": lop, "gv_list": gv_list})
 
-# Quản lý giáo viên
+
+#Trang hiển thị danh sách giáo viên: manage_teacher_template.html
 @login_required(login_url='login')
 def manage_teacher(request):
     teachers = GiaoVien.objects.all()
     return render(request, "hod_template/manage_teacher_template.html", {"teachers": teachers})
 
-@login_required(login_url='login')
-def teacher_profile(request, teacher_id):
-    teacher = get_object_or_404(GiaoVien, MaGV=teacher_id)
-    return render(request, "hod_template/teacher_profile.html", {"teacher": teacher})
+# @login_required(login_url='login')
+# def teacher_profile(request, teacher_id):
+#     teacher = get_object_or_404(GiaoVien, MaGV=teacher_id)
+#     return render(request, "hod_template/teacher_profile.html", {"teacher": teacher})
 
+#Thêm giáo viên: add_teacher.html
 @login_required(login_url='login')
 def add_teacher(request):
     if request.method == "POST":
@@ -360,7 +370,7 @@ def add_teacher(request):
 
     return render(request, "hod_template/add_teacher.html")
 
-@login_required(login_url='login')
+#Chỉnh sửa, cập nhật thông tin giáo viên: edit_teacher.html
 @login_required(login_url='login')
 def edit_teacher(request, magv):
     giaovien = get_object_or_404(GiaoVien, MaGV=magv)
@@ -392,6 +402,7 @@ def edit_teacher(request, magv):
 
     return render(request, "hod_template/edit_teacher.html", {"giaovien": giaovien})
 
+#Xóa giáo viên
 @login_required(login_url='login')
 def delete_teacher(request, magv):
     giaovien = get_object_or_404(GiaoVien, MaGV=magv)
@@ -407,7 +418,7 @@ def delete_teacher(request, magv):
 #     classes = LopHoc.objects.all()
 #     return render(request, "hod_template/manage_class_template.html", {"classes": classes})
 
-
+#Trang gán môn học cho lớp: 
 @login_required(login_url='login')
 def assign_subject_to_class(request):
     if request.method == "POST":
@@ -422,13 +433,15 @@ def assign_subject_to_class(request):
             messages.error(request, "Thất bại khi gán môn học!")
     return redirect('manage_subjects')
 
+#Trang xem điểm của học sinh: manage_scores_template.html
 @login_required(login_url='login')
 def manage_scores(request):
     results = KetQua.objects.select_related('hsid', 'ma_mhl').all()
     return render(request, "hod_template/manage_scores_template.html", {"results": results})
 
-@login_required(login_url='login')
-def update_score(request, kqid):
+# #Trang cập nhật điểm
+# @login_required(login_url='login')
+# def update_score(request, kqid):
     result = get_object_or_404(KetQua, pk=kqid)
     if request.method == "POST":
         fields = [
@@ -442,14 +455,14 @@ def update_score(request, kqid):
         return redirect('manage_scores')
     return render(request, "hod_template/edit_score_template.html", {"result": result})
 
-@login_required(login_url='login')
-def ykien_phuhuynh(request):
-    ykiens = YKien.objects.select_related('MaHS', 'MaPH').all()
-    return render(request, "hod_template/ykien_phuhuynh.html", {"ykiens": ykiens})
+# @login_required(login_url='login')
+# def ykien_phuhuynh(request):
+#     ykiens = YKien.objects.select_related('MaHS', 'MaPH').all()
+#     return render(request, "hod_template/ykien_phuhuynh.html", {"ykiens": ykiens})
 
-@csrf_exempt
-@login_required(login_url='login')
-def reply_ykien_phuhuynh(request):
+# @csrf_exempt
+# @login_required(login_url='login')
+# def reply_ykien_phuhuynh(request):
     if request.method == "POST":
         ykid = request.POST.get("YKID")
         magv = request.POST.get("MaGV")
@@ -459,10 +472,12 @@ def reply_ykien_phuhuynh(request):
         except:
             return HttpResponse("ERROR")
 
+#Cập nhật admin, bgh: admin_profile.html
 @login_required(login_url='login')
 def admin_profile(request):
     return render(request, "hod_template/admin_profile.html", {"user": request.user})
 
+#Cập nhật thông tin admin, bgh
 @login_required(login_url='login')
 def admin_profile_update(request):
 
@@ -481,8 +496,7 @@ def admin_profile_update(request):
         return redirect("admin_profile")
     return redirect("admin_profile")
 
-# QL chuyên môn
-@login_required(login_url='login')
+#Phân công gv dạy.
 def assign_teacher_to_class(request):
     namhoc = request.GET.get("namhoc")
     khoi = request.GET.get("khoi")
@@ -554,7 +568,7 @@ def assign_teacher_to_class(request):
 
     return render(request, "hod_template/assign_teacher_template.html", context)
 
-
+#Thêm môn học cho trường: add_subject_template.html
 @login_required(login_url='login')
 def add_subject(request):
     if request.method == "POST":
@@ -572,24 +586,7 @@ def add_subject(request):
 
     return render(request, "hod_template/add_subject_template.html")
 
-@login_required(login_url='login')
-def add_subject(request):
-    if request.method == "POST":
-        mamh = request.POST.get("MaMH")
-        tenmh = request.POST.get("TenMH")
-        sotiet = request.POST.get("SoTiet")
-        kieudg = request.POST.get("KieuDG")
-
-        if MonHoc.objects.filter(MaMH=mamh).exists():
-            messages.error(request, "Mã môn học đã tồn tại!")
-        else:
-            MonHoc.objects.create(MaMH=mamh, TenMH=tenmh, SoTiet=sotiet, KieuDG=kieudg)
-            messages.success(request, "Thêm môn học thành công!")
-        return redirect("add_subject")
-
-    return render(request, "hod_template/add_subject_template.html")
-
-
+#Hiển thị các môn đã có: manage_subjects.html
 @login_required(login_url='login')
 def manage_subjects(request):
     ds_monhoc = MonHoc.objects.all()
@@ -597,6 +594,7 @@ def manage_subjects(request):
         "ds_monhoc": ds_monhoc
     })
 
+#Chỉnh sửa, cập nhật thông tin môn học: edit_subject_template.html
 @login_required(login_url='login')
 def edit_subject(request, mamh):
     monhoc = get_object_or_404(MonHoc, MaMH=mamh)
@@ -616,6 +614,7 @@ def edit_subject(request, mamh):
 
     return render(request, "hod_template/edit_subject_template.html", {"monhoc": monhoc})
 
+#Xóa môn học.
 @login_required(login_url='login')
 def delete_subject(request, mamh):
     try:
@@ -626,3 +625,232 @@ def delete_subject(request, mamh):
         messages.error(request, f"Lỗi khi xóa môn học: {e}")
     return redirect("manage_subjects")
 
+#Trang gán môn học cho lớp: assign_subject_to_class.html
+@login_required(login_url='login')
+def assign_subject_to_class(request):
+    years = sorted(LopHoc.objects.values_list("NamHOC", flat=True).distinct())
+    khois = sorted(LopHoc.objects.values_list("Khoi", flat=True).distinct())
+
+    selected_year = request.GET.get("namhoc")
+    selected_khoi = request.GET.get("khoi")
+    selected_class = request.GET.get("lop")
+
+    classes = LopHoc.objects.filter(NamHOC=selected_year, Khoi=selected_khoi) if selected_year and selected_khoi else []
+
+    monhocs = []
+    if selected_khoi:
+        filtered = MonHoc.objects.filter(MaMH__startswith=str(selected_khoi))
+        for m in filtered:
+            suffix = m.MaMH[-2:].upper()
+            gvs = GiaoVien.objects.filter(MaGV__iendswith=suffix)
+            # Gắn danh sách giáo viên trực tiếp vào từng môn
+            m.ds_gv = gvs
+            monhocs.append(m)
+
+    # ✅ Xử lý POST
+    if request.method == "POST":
+        namhoc = request.POST.get("namhoc")
+        malop = request.POST.get("lop")
+        total = int(request.POST.get("total"))
+
+        for i in range(1, total + 1):
+            mamh = request.POST.get(f"mon_id_{i}")
+            magv = request.POST.get(f"gv_id_{i}")
+
+            if mamh and magv:
+                mamhl = f"{mamh}_{malop}"
+                mon = get_object_or_404(MonHoc, MaMH=mamh)
+                lop = get_object_or_404(LopHoc, MaLOP=malop, NamHOC=namhoc)
+                gv = get_object_or_404(GiaoVien, MaGV=magv)
+
+                MonHocLop.objects.update_or_create(
+                    MaMHL=mamhl,
+                    defaults={
+                        "NamHOC": namhoc,
+                        "MaMH": mon,
+                        "MaLOP": lop,
+                        "MaGV": gv,
+                        "ChoPhepNhapDiem": True,
+                    }
+                )
+
+        messages.success(request, "✅ Đã gán môn học cho lớp thành công.")
+        return redirect(request.path + f"?namhoc={namhoc}&khoi={selected_khoi}&lop={malop}")
+
+    context = {
+        "years": years,
+        "khois": khois,
+        "classes": classes,
+        "selected_year": selected_year,
+        "selected_khoi": selected_khoi,
+        "selected_class": selected_class,
+        "monhocs": monhocs,
+    }
+    return render(request, "hod_template/assign_subject_to_class.html", context)
+
+#Trang thống kê giáo viên dạy theo lớp: teacher_assignment_report.html
+@login_required(login_url='login')
+def teacher_assignment_report(request):
+    years = sorted(LopHoc.objects.values_list("NamHOC", flat=True).distinct())
+    khois = [10, 11, 12]  # ✅ Khối luôn là 10, 11, 12 cố định
+
+    selected_year = request.GET.get("namhoc")
+    selected_khoi = request.GET.get("khoi")
+    selected_class = request.GET.get("lop")
+
+    classes = []
+    if selected_year and selected_khoi:
+        classes = LopHoc.objects.filter(NamHOC=selected_year, Khoi=int(selected_khoi))
+
+    assignments = []
+    if selected_class and selected_year:
+        assignments = MonHocLop.objects.filter(MaLOP__MaLOP=selected_class, NamHOC=selected_year)
+
+    return render(request, "hod_template/teacher_assignment_report.html", {
+        "years": years,
+        "khois": khois,  # ✅ đảm bảo có truyền vào
+        "classes": classes,
+        "selected_year": selected_year,
+        "selected_khoi": selected_khoi,
+        "selected_class": selected_class,
+        "assignments": assignments
+    })
+
+
+#Trang cho biết lớp đã có những môn nào: view_subjects_by_class.html
+@login_required(login_url='login')
+def view_subjects_by_class(request):
+    # Lấy danh sách năm học duy nhất, sắp xếp tăng dần
+    years = sorted(LopHoc.objects.values_list("NamHOC", flat=True).distinct())
+    khois = [10, 11, 12]
+
+    # Lấy dữ liệu từ GET request
+    selected_year = request.GET.get("namhoc")
+    selected_khoi = request.GET.get("khoi")
+    selected_class = request.GET.get("lop")
+
+    # Danh sách lớp theo năm học và khối
+    classes = LopHoc.objects.filter(NamHOC=selected_year, Khoi=selected_khoi) if selected_year and selected_khoi else []
+
+    # Danh sách môn đã gán vào lớp đó
+    assigned_subjects = []
+    if selected_class and selected_year:
+        assigned_subjects = MonHocLop.objects.filter(MaLOP__MaLOP=selected_class, NamHOC=selected_year)\
+                                             .select_related("MaMH", "MaGV")
+
+    return render(request, "hod_template/view_subjects_by_class.html", {
+        "years": years,
+        "khois": khois,
+        "classes": classes,
+        "selected_year": selected_year,
+        "selected_khoi": selected_khoi,
+        "selected_class": selected_class,
+        "assigned_subjects": assigned_subjects,
+    })
+
+#Hiển thị điểm của lớp: scores_by_class.html
+@login_required(login_url='login')
+def scores_by_class(request):
+    namhoc_selected = request.GET.get("namhoc")
+    khoi_selected = request.GET.get("khoi")
+    lop_selected = request.GET.get("lop")
+    mon_selected = request.GET.get("mon")
+    hk_selected = request.GET.get("hk")
+
+    # Danh sách năm học (tất cả)
+    nams = LopHoc.objects.values_list("NamHOC", flat=True).distinct().order_by("NamHOC")
+
+    # Danh sách khối (lọc theo năm học nếu có)
+    if namhoc_selected:
+        khois = LopHoc.objects.filter(NamHOC=namhoc_selected).values_list("Khoi", flat=True).distinct().order_by("Khoi")
+    else:
+        khois = LopHoc.objects.values_list("Khoi", flat=True).distinct().order_by("Khoi")
+
+    # Danh sách lớp (lọc theo năm học và khối nếu có)
+    lops = LopHoc.objects.all()
+    if namhoc_selected:
+        lops = lops.filter(NamHOC=namhoc_selected)
+    if khoi_selected:
+        lops = lops.filter(Khoi=khoi_selected)
+
+    # Danh sách môn (lọc theo khối nếu có)
+    mons = MonHoc.objects.all()
+    if khoi_selected:
+        mons = MonHoc.objects.filter(
+            Q(MaMH__startswith=str(khoi_selected)) |
+            Q(TenMH__iendswith=str(khoi_selected))
+        )
+
+    # Lọc kết quả nếu đủ bộ lọc
+    ketquas = []
+    if namhoc_selected and khoi_selected and lop_selected and mon_selected and hk_selected:
+        ketquas = KetQua.objects.filter(
+            hsid__MaLOP__MaLOP=lop_selected,
+            ma_mhl__MaMH__MaMH=mon_selected,
+            nam_hoc=namhoc_selected
+        ).select_related("hsid__MaHS", "ma_mhl__MaMH")
+
+    context = {
+        "nams": nams,
+        "khois": khois,
+        "lops": lops,
+        "mons": mons,
+        "ketquas": ketquas,
+        "namhoc_selected": namhoc_selected,
+        "khoi_selected": khoi_selected,
+        "lop_selected": lop_selected,
+        "mon_selected": mon_selected,
+        "hk_selected": hk_selected,
+    }
+    return render(request, "hod_template/scores_by_class.html", context)
+
+#Cập nhật quyền chỉnh sửa điểm số: 
+@login_required
+@login_required(login_url='login')
+def toggle_input_permission(request):
+    # Lọc năm học và khối
+    all_years = LopHoc.objects.values_list('NamHOC', flat=True).distinct()
+    khois = LopHoc.objects.values_list('Khoi', flat=True).distinct()
+
+    selected_year = request.GET.get('namhoc')
+    selected_khoi = request.GET.get('khoi')
+    selected_lop = request.GET.get('lop')
+
+    lops = []
+    monhoclop_list = []
+
+    if selected_year and selected_khoi:
+        lops = LopHoc.objects.filter(NamHOC=selected_year, Khoi=selected_khoi)
+
+    if selected_year and selected_khoi and selected_lop:
+        try:
+            lop = LopHoc.objects.get(MaLOP=selected_lop, NamHOC=selected_year, Khoi=selected_khoi)
+            monhoclop_list = MonHocLop.objects.filter(MaLOP=lop, NamHOC=selected_year).select_related('MaMH', 'MaGV')
+        except LopHoc.DoesNotExist:
+            pass
+
+    # POST: cập nhật quyền nhập điểm
+    if request.method == 'POST':
+        checked_ids = request.POST.getlist('permission')  # Những môn được chọn
+        all_ids = request.POST.getlist('all_ids')         # Tất cả môn
+
+        for mamhl in all_ids:
+            try:
+                mhl = MonHocLop.objects.get(MaMHL=mamhl)
+                mhl.ChoPhepNhapDiem = mamhl in checked_ids
+                mhl.save()
+            except:
+                pass
+        messages.success(request, "Cập nhật quyền nhập điểm thành công!")
+        return redirect(f"/score-management/permission/?namhoc={selected_year}&khoi={selected_khoi}&lop={selected_lop}")
+
+    context = {
+        "all_years": all_years,
+        "khois": khois,
+        "lops": lops,
+        "selected_year": selected_year,
+        "selected_khoi": selected_khoi,
+        "selected_lop": selected_lop,
+        "monhoclop_list": monhoclop_list,
+    }
+    return render(request, "hod_template/toggle_input_permission.html", context)
